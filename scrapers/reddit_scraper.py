@@ -9,20 +9,19 @@
 
 import json 
 import requests
-#from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import praw
-import configparser
-#import pandas as pd
+import os
+from dotenv import load_dotenv
 
-#we're gonna use praw to access the reddit api
-config = configparser.ConfigParser()
-config.read('../config/config.ini')
+load_dotenv(dotenv_path="../config/config.env")
+
+# we're gonna use praw to access the reddit api
 
 reddit = praw.Reddit(
-    client_id=config['REDDIT']['client_id'],
-    client_secret=config['REDDIT']['client_secret'],
-    user_agent=config['REDDIT']['user_agent']
+    client_id=os.getenv("REDDIT_CLIENT_ID"),
+    client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
+    user_agent=os.getenv("REDDIT_USER_AGENT")
 )
 
 
