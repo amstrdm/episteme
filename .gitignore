@@ -1,2 +1,4 @@
 config
 test
+test.py
+__pycache__/
