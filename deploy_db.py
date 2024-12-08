@@ -4,7 +4,10 @@ from database.tables import Base
 from dotenv import load_dotenv
 import os
 
-load_dotenv(dotenv_path="./config/config.env")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ENV_PATH = os.path.join(BASE_DIR, "../config/config.env")
+
+load_dotenv(ENV_PATH)
 
 def create_database_if_not_exists(user, password, host, dbname):
     """Checks if database exists and creates one if it does not"""
@@ -34,8 +37,9 @@ def create_tables(user, password, host, dbname):
         Base.metadata.create_all(engine)
         print("All Tables created successfully (if not already present)")
     except Exception as e:
-        print(f"Error creatint tables: {e}")
-    
+        print(f"Error creatint tables: {e}")    
+
+
 if __name__ == "__main__":
     DB_USER = os.getenv("POSTGRESQL_USER")
     DB_PASSWORD = os.getenv("POSTGRESQL_PASSWORD")
