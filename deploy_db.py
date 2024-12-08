@@ -4,7 +4,7 @@ from database.tables import Base
 from dotenv import load_dotenv
 import os
 
-load_dotenv(dotenv_path="../config/config.env")
+load_dotenv(dotenv_path="./config/config.env")
 
 def create_database_if_not_exists(user, password, host, dbname):
     """Checks if database exists and creates one if it does not"""
@@ -42,6 +42,7 @@ if __name__ == "__main__":
     DB_HOST = os.getenv("POSTGRESQL_HOST")
     DB_NAME = os.getenv("POSTGRESQL_DBNAME")
 
+    print(DB_USER, DB_PASSWORD, DB_HOST, DB_NAME)
     # Create Database if it doesn't exist
     create_database_if_not_exists(DB_USER, DB_PASSWORD, DB_HOST, DB_NAME)
 

@@ -65,7 +65,7 @@ class Point(Base):
 class Criticism(Base):
     __tablename__ = "criticisms"
     id = Column(Integer, primary_key=True)
-    point_id = Column(Integer, ForeignKey="points.id", nullable=False)
+    point_id = Column(Integer, ForeignKey("points.id"), nullable=False)
     text = Column(Text, nullable=False)
     date_posted = Column(DateTime)
     validity_score = Column(
