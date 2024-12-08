@@ -4,7 +4,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from tables import Base
 
-load_dotenv("../config/config.env")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ENV_PATH = os.path.join(BASE_DIR, "../config/config.env")
+
+load_dotenv(ENV_PATH)
 
 DB_USER = os.getenv("POSTGRESQL_USER")
 DB_PASSWORD = os.getenv("POSTGRESQL_PASSWORD")
