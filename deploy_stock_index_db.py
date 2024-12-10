@@ -60,9 +60,11 @@ except Exception as e:
     print(f"Error creating tables: {e}")    
 
 # Read JSON data
-with open(JSON_DATA_PATH, "r") as f:
-    data = json.load(f)
-
+try:
+    with open(JSON_DATA_PATH, "r") as f:
+        data = json.load(f)
+except FileNotFoundError:
+    print(f"JSON data file not found. Please place a JSON file containing stock tickers and names into {JSON_DATA_PATH}")
 records = list(data.values())
 
 # Insert Data into the table
