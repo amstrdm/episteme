@@ -19,7 +19,7 @@ Session = sessionmaker(bind=engine)
 
 router = APIRouter()
 
-@router.get("/stock_query")
+@router.get("/stock-query")
 def search_stock(q: str = Query(..., min_length=1)):
     # Limit Number of results to keep it responsive
     limit = 10
