@@ -8,8 +8,7 @@
 #7. link of post
 
 import json 
-import requests
-from datetime import datetime, timedelta
+from datetime import datetime
 import praw
 import os
 from dotenv import load_dotenv

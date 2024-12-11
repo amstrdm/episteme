@@ -1,6 +1,5 @@
-from sqlalchemy import create_engine, text
-from sqlalchemy.exc import OperationalError
-from database.models.thesisai import Base, Ticker, Post, Point, Criticism
+from sqlalchemy import create_engine
+from database.models.thesisai import Base
 from dotenv import load_dotenv
 import os
 from sqlalchemy_utils import database_exists, create_database

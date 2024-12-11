@@ -1,10 +1,8 @@
-from sqlalchemy import create_engine, Text, Column, Integer, Table, String, MetaData, text, Index
+from sqlalchemy import create_engine, text, Index
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.exc import OperationalError
 from dotenv import load_dotenv
 import os
 from sqlalchemy_utils import database_exists, create_database
-from sqlalchemy.ext.declarative import declarative_base
 import json
 from database.models.stock_index import metadata, stocks_table
 
