@@ -5,18 +5,13 @@ import os
 from sqlalchemy_utils import database_exists, create_database
 import json
 from database.models.stock_index import metadata, stocks_table
+from config.database_url import DATABASE_URL, DB_NAME
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ENV_PATH = os.path.join(BASE_DIR, "./config/config.env")
 JSON_DATA_PATH = os.path.join(BASE_DIR, "./data/sec_tickers.json")
 
-load_dotenv(ENV_PATH)
-DB_USER = os.getenv("POSTGRESQL_USER")
-DB_PASSWORD = os.getenv("POSTGRESQL_PASSWORD")
-DB_HOST = os.getenv("POSTGRESQL_HOST")
-DB_NAME = os.getenv("POSTGRESQL_STOCKS_DBNAME")
 
-engine = create_engine(f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}")
+engine = create_engine(DATABASE_URL)
 
 # Define trigram indexes
 idx_ticker_trgm = Index(
