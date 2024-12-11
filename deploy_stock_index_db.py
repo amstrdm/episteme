@@ -48,7 +48,10 @@ else:
 
 # Enable the pg_trgm extension (must be done before creating trigram indexes)
 with engine.connect() as conn:
-    conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
+    try:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
+    except Exception as e:
+        print(f"Could not create pg_trgm extension: {e}")
     conn.commit()
 
 # Create tables if they don't already exist
@@ -68,8 +71,15 @@ records = list(data.values())
 
 # Insert Data into the table
 with engine.connect() as conn:
-    conn.execute(text("TRUNCATE stocks;")) # We clear all existing data
-    conn.execute(insert(stocks_table), records)
+    try:
+        conn.execute(text("TRUNCATE stocks;")) # We clear all existing data
+    except Exception as e:
+        print(f"Could not truncate table: {e}")
+    
+    try:
+        conn.execute(insert(stocks_table), records)
+    except Exception as e:
+        print(f"Could not insert data into table: {e}")
     conn.commit()
 
 print("Stock Index Database Setup complete and data insertion complete!")
