@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models.thesisai import Base
+from database.models.thesisai import Base
 from config.database_url import DATABASE_URL
 
 # Create the Engine and session factory
