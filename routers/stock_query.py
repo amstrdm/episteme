@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Query
-from sqlalchemy import  select, create_engine, func, case, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import  select, func, case, text
 from dotenv import load_dotenv
 import os
 from database.models.stock_index import stocks_table
+from database.db import SessionLocal
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.path.join(BASE_DIR, "../config/config.env")
@@ -14,16 +14,13 @@ DB_PASSWORD = os.getenv("POSTGRESQL_PASSWORD")
 DB_HOST = os.getenv("POSTGRESQL_HOST")
 DB_NAME = os.getenv("POSTGRESQL_STOCKS_DBNAME")
 
-engine = create_engine(f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}")
-Session = sessionmaker(bind=engine)
-
 router = APIRouter()
 
 @router.get("/stock-query")
 def search_stock(q: str = Query(..., min_length=1)):
     # Limit Number of results to keep it responsive
     limit = 10
-    with Session() as session:
+    with SessionLocal() as session:
         # use ILIKE with indexes
         stmt = select(
             stocks_table.c.ticker,

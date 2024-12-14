@@ -1,11 +1,10 @@
-from sqlalchemy import create_engine
+from database.db import engine
 from database.models.thesisai import Base
 from sqlalchemy_utils import database_exists, create_database
 from config.database_url import DATABASE_URL, DB_NAME
 
 def create_database_if_not_exists():
     """Checks if database exists and creates one if it does not"""
-    engine = create_engine(DATABASE_URL)
 
     if not database_exists(engine.url):
         create_database(engine.url)
@@ -16,8 +15,6 @@ def create_database_if_not_exists():
     
 def create_tables():
     """Creates tables defined in SQLAlchemy models if they don't already exist"""
-    engine = create_engine(DATABASE_URL)
-
     try:
         Base.metadata.create_all(engine)
         print("All Tables created successfully (if not already present)")

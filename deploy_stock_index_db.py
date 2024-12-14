@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, text, Index
+from database.db import engine
+from sqlalchemy import text, Index
 from sqlalchemy.dialects.postgresql import insert
-from dotenv import load_dotenv
 import os
 from sqlalchemy_utils import database_exists, create_database
 import json
@@ -9,9 +9,6 @@ from config.database_url import DATABASE_URL, DB_NAME
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 JSON_DATA_PATH = os.path.join(BASE_DIR, "./data/sec_tickers.json")
-
-
-engine = create_engine(DATABASE_URL)
 
 # Define trigram indexes
 idx_ticker_trgm = Index(
@@ -60,6 +57,7 @@ try:
         data = json.load(f)
 except FileNotFoundError:
     print(f"JSON data file not found. Please place a JSON file containing stock tickers and names into {JSON_DATA_PATH}")
+
 records = list(data.values())
 
 # Insert Data into the table
