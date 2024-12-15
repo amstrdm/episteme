@@ -57,7 +57,7 @@ class Point(Base):
     # Relationships
     ticker = relationship("Ticker", back_populates="points")
     post = relationship("Post", back_populates="points")
-    criticisms = relationship("Criticism", back_populates="points", cascade="all, delete-orphan")
+    criticisms = relationship("Criticism", back_populates="point", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Point(id={self.id}, sentiment_score={self.sentiment_score}, text='{self.text[:30]}...')>"
