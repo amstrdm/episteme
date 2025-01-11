@@ -3,10 +3,6 @@ from pydantic import BaseModel
 from routers.analysis.check_existing_analysis import check_ticker_in_database
 router = APIRouter()
 
-class StockQuery(BaseModel):
-    ticker: str
-    title: str
-
 @router.post("/generate-analysis")
 def create_analysis(ticker: str, title: str):
     last_analyzed = check_ticker_in_database(ticker)
