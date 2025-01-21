@@ -6,7 +6,7 @@ from database.models.stock_index import stocks_table
 from database.db import SessionLocal
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ENV_PATH = os.path.join(BASE_DIR, "../config/config.env")
+ENV_PATH = os.getenv("ENV_PATH")
 
 load_dotenv(ENV_PATH)
 DB_USER = os.getenv("POSTGRESQL_USER")

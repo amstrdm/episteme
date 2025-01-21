@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 current_dir = os.path.dirname(__file__)
 
-ENV_PATH = os.path.join(current_dir, "config.env")
+ENV_PATH = os.getenv("ENV_PATH")
 
 load_dotenv(ENV_PATH)
 
