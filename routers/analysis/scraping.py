@@ -1,6 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from scrapers.reddit_scraper import get_reddit_posts_info
-from scrapers.seekingalpha_scraper import get_seekingalpha_posts_info
+from .scrapers.reddit_scraper import get_reddit_posts_info
+from .scrapers.seekingalpha_scraper import get_seekingalpha_posts_info
 
 def scrape_reddit(ticker:str, title: str, subreddits, reddit_timeframe: str, reddit_num_posts: int):
     return get_reddit_posts_info(stock_ticker=ticker, stock_name=title, subreddits=subreddits, timeframe=reddit_timeframe, num_posts=reddit_num_posts)
