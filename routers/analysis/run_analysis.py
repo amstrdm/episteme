@@ -1,4 +1,4 @@
-from scraping import scrape_content
+from .scraping import scrape_content
 
 # A simple in-memory store for tasks
 # Keys = task_id, Value = dict with status, progress, and result

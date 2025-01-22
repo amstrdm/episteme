@@ -12,7 +12,7 @@ def check_ticker_in_database(ticker: str):
     return result.last_analyzed if result else None
 
 @router.get("/check-analysis")
-def create_analysis(ticker: str, title: str):
+def create_analysis(ticker: str):
     last_analyzed = check_ticker_in_database(ticker)
     
     if last_analyzed is not None:
