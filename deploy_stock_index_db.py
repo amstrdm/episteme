@@ -5,11 +5,12 @@ import os
 from sqlalchemy_utils import database_exists, create_database
 import json
 from database.models.stock_index import metadata, stocks_table
-from config.database_url import DATABASE_URL, DB_NAME
+from config.database_url import STOCKS_DATABASE_URL, STOCKS_DB_NAME
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 JSON_DATA_PATH = os.path.join(BASE_DIR, "./data/sec_tickers.json")
-
+print(STOCKS_DATABASE_URL)
+print(STOCKS_DB_NAME)
 # Define trigram indexes
 idx_ticker_trgm = Index(
     "idx_stocks_ticker_trgm",
@@ -31,10 +32,10 @@ idx_title_trgm = Index(
 
 if not database_exists(engine.url):
     create_database(engine.url)
-    print(f"Database {DB_NAME} created successfully")
+    print(f"Database {STOCKS_DB_NAME} created successfully")
 
 else:
-    print(f"Database {DB_NAME} exists already")
+    print(f"Database {STOCKS_DB_NAME} exists already")
 
 # Enable the pg_trgm extension (must be done before creating trigram indexes)
 with engine.connect() as conn:
