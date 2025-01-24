@@ -59,7 +59,7 @@ def start_analysis_process(ticker:str, title: str, subreddits, reddit_timeframe:
     }
 
     TASKS[task_id] = {
-        "status": "Scraping Content",
+        "status": "Scraping content",
         "progress": 1,
         "ticker": ticker,
     }
@@ -76,6 +76,9 @@ def start_analysis_process(ticker:str, title: str, subreddits, reddit_timeframe:
     
     # Have to implement error handling here to raise possible scraping errors to the frontend
     
+    TASKS[task_id]["status"] = "Filtering out content"
+    TASKS[task_id]["progress"] = "2"
+
     # Step 2: Remove already analyzed posts from scraped posts
     filter_already_analyzed_posts(session=SessionLocal(), ticker_symbol=ticker, scraped_posts=scrape_results)
 
