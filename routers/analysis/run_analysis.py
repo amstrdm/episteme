@@ -2,9 +2,8 @@ from .scraping import scrape_content
 from sqlalchemy.orm import Session
 from database.db import SessionLocal
 from sqlalchemy import select
-from check_existing_analysis import check_ticker_in_database
 from typing import List, Dict
-from database.models.thesisai import Ticker, Post
+from database.models.thesisai import Ticker,  Post
 
 # A simple in-memory store for tasks
 # Keys = task_id, Value = dict with status, progress, and result
