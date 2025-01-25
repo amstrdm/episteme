@@ -24,9 +24,9 @@ def scrape_content(ticker:str, title: str, subreddits, reddit_timeframe: str, re
                 data = future.result()
                 results[source_name] = data
             except Exception as e:
+                # Log and re-raise with context
                 print(f"Error scraping {source_name}: {e}")
-                raise f"Error scraping {source_name}: {e}"
-                #! Have to implement error handling here to raise possible scraping errors to run_analysis which should then raise to frontend
+                raise RuntimeError(f"failed to scrape {source_name}") from e
     # 'results' now holds data from both threads
     reddit_data = results.get("reddit", [])
     seekingalpha_data = results.get("seekingalpha", [])

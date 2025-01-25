@@ -6,7 +6,7 @@ from typing import List, Dict
 from database.models.thesisai import Ticker,  Post
 
 # A simple in-memory store for tasks
-# Keys = task_id, Value = dict with status, progress, and result
+# Keys = task_id, Value = dict with status, progress, error and result
 TASKS = {}
 
 def filter_already_analyzed_posts(
@@ -51,37 +51,55 @@ def filter_already_analyzed_posts(
 
     return filtered_posts
 
-def start_analysis_process(ticker:str, title: str, subreddits, reddit_timeframe: str, reddit_num_posts: int, seekingalpha_num_posts, task_id: str):
-    TASKS[task_id] = {
-        "status": "Started Analysis",
-        "progress": 0,
-        "ticker": ticker,
-    }
+def start_analysis_process(
+        ticker:str,
+        title: str, 
+        subreddits: List[str], 
+        reddit_timeframe: str, 
+        reddit_num_posts: int, 
+        seekingalpha_num_posts: int, 
+        task_id: str
+    ):
+    try:
 
-    TASKS[task_id] = {
-        "status": "Scraping content",
-        "progress": 1,
-        "ticker": ticker,
-    }
+        TASKS[task_id] = {
+            "status": "Scraping content",
+            "progress": 1,
+            "ticker": ticker,
+            "error": None
+        }
 
-    # Step 1: Scrape content
-    scrape_results = scrape_content(
-        ticker=ticker,
-        title=title, 
-        subreddits=subreddits, 
-        reddit_timeframe=reddit_timeframe, 
-        reddit_num_posts=reddit_num_posts, 
-        seekingalpha_num_posts=seekingalpha_num_posts
-    )
-    
-    # Have to implement error handling here to raise possible scraping errors to the frontend
-    
-    TASKS[task_id]["status"] = "Filtering out content"
-    TASKS[task_id]["progress"] = "2"
+        # Step 1: Scrape content
+        scrape_results = scrape_content(
+            ticker=ticker,
+            title=title, 
+            subreddits=subreddits, 
+            reddit_timeframe=reddit_timeframe, 
+            reddit_num_posts=reddit_num_posts, 
+            seekingalpha_num_posts=seekingalpha_num_posts
+        )
+        
+        # Have to implement error handling here to raise possible scraping errors to the frontend
+        
+        # Update Task Status
+        TASKS[task_id].update({
+            "status": "filtering content",
+            "progress": 2
+        })
 
-    # Step 2: Remove already analyzed posts from scraped posts
-    filter_already_analyzed_posts(session=SessionLocal(), ticker_symbol=ticker, scraped_posts=scrape_results)
+        # Step 2: Remove already analyzed posts from scraped posts
+        filter_already_analyzed_posts(session=SessionLocal(), ticker_symbol=ticker, scraped_posts=scrape_results)
 
+        # Update task status to completed
+        TASKS[task_id].update({
+            "status": "completed",
+            "progress": 100,
+        })
 
-    # Once done, update the status and store a "result"
-    TASKS[task_id]["status"] = "completed"
+    except Exception as e:
+        # Update task status as failed
+        TASKS[task_id].update({
+            "status": "failed",
+            "error": str(e),
+            "progress": 100, # Mark as fully progressed but failed
+        })

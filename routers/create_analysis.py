@@ -50,7 +50,13 @@ def analysis_status(task_id: str):
     Polling endpoint: user calls this with the task_id to check
     status and progress of the background job.
     """
-    if task_id not in TASKS:
+    task = TASKS.get(task_id)
+    if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
-    return TASKS[task_id]
+    return {
+        "status": task.get("status"),
+        "progress": task.get("progress"),
+        "error": task.get("error"),
+        "ticker": task.get("ticker")
+    }
