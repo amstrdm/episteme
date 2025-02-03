@@ -52,15 +52,19 @@ def filter_already_analyzed_posts(
     return filtered_posts
 
 def start_analysis_process(
-        ticker:str,
-        title: str, 
-        subreddits: List[str], 
-        reddit_timeframe: str, 
-        reddit_num_posts: int, 
-        seekingalpha_num_posts: int, 
-        task_id: str
+        # ticker:str,
+        # title: str, 
+        # subreddits: List[str], 
+        # reddit_timeframe: str, 
+        # reddit_num_posts: int, 
+        # seekingalpha_num_posts: int, 
+        # task_id: str,
+        **kwargs,
     ):
     try:
+
+        ticker = kwargs.get("ticker")
+        task_id = kwargs.get("task_id")
 
         TASKS[task_id] = {
             "status": "Scraping content",
@@ -70,17 +74,9 @@ def start_analysis_process(
         }
 
         # Step 1: Scrape content
-        scrape_results = scrape_content(
-            ticker=ticker,
-            title=title, 
-            subreddits=subreddits, 
-            reddit_timeframe=reddit_timeframe, 
-            reddit_num_posts=reddit_num_posts, 
-            seekingalpha_num_posts=seekingalpha_num_posts
-        )
-        
-        # Have to implement error handling here to raise possible scraping errors to the frontend
-        
+        kwargs.pop("task_id")
+        scrape_results = scrape_content(**kwargs)
+                
         # Update Task Status
         TASKS[task_id].update({
             "status": "filtering content",
@@ -89,6 +85,9 @@ def start_analysis_process(
 
         # Step 2: Remove already analyzed posts from scraped posts
         filter_already_analyzed_posts(session=SessionLocal(), ticker_symbol=ticker, scraped_posts=scrape_results)
+
+        # Step 3: Save scraped posts to Database
+        
 
         # Update task status to completed
         TASKS[task_id].update({

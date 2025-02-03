@@ -36,7 +36,15 @@ def start_analysis(
     }
 
     # Add the analysis function to the background tasks
-    background_tasks.add_task(start_analysis_process, ticker, title, subreddits, reddit_timeframe, reddit_num_posts, seekingalpha_num_posts, task_id)
+    background_tasks.add_task(
+        start_analysis_process, 
+        ticker=ticker, 
+        title=title, 
+        subreddits=subreddits, 
+        reddit_timeframe=reddit_timeframe, 
+        reddit_num_posts=reddit_num_posts, 
+        seekingalpha_num_posts=seekingalpha_num_posts, 
+        task_id=task_id)
 
     return {
         "message": f"Analysis for {ticker} started",
