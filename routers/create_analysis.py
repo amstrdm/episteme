@@ -66,5 +66,6 @@ def analysis_status(task_id: str):
         "status": task.get("status"),
         "progress": task.get("progress"),
         "error": task.get("error"),
-        "ticker": task.get("ticker")
+        "ticker": task.get("ticker"),
+        "posts": task.get("posts") # This is temporary garbage to look at the post output. Forive me
     }

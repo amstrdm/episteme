@@ -3,13 +3,15 @@ from sqlalchemy.orm import Session
 from database.db import SessionLocal
 from sqlalchemy import select
 from typing import List, Dict
+from sqlalchemy import func
+from ..check_existing_analysis import check_ticker_in_database
 from database.models.thesisai import Ticker,  Post
 
 # A simple in-memory store for tasks
 # Keys = task_id, Value = dict with status, progress, error and result
 TASKS = {}
 
-def filter_already_analyzed_posts(
+def filter_analyzed_posts(
         session: Session,
         ticker_symbol: str,
         scraped_posts: List[Dict],
@@ -21,13 +23,15 @@ def filter_already_analyzed_posts(
     Each element in 'scraped_posts' is assumed to be a dict with a 'url' field.
     """
     # 1. Find the Ticker row by symbol
-    ticker = session.query(Ticker).filter_by(symbol=ticker_symbol).one_or_none()
-    if not ticker:
+    ticker_exists, _ = check_ticker_in_database(ticker_symbol)
+    if not ticker_exists:
         # create new Ticker
         ticker = Ticker(symbol=ticker_symbol.lower())
         session.add(ticker)
         session.commit()
         return scraped_posts
+    
+    ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker_symbol.lower()).first()
     # 2. Gather all scraped URLs in a set for quick membership checks
     scraped_urls = {post["url"] for post in scraped_posts if "url" in post}
 
@@ -38,7 +42,7 @@ def filter_already_analyzed_posts(
     # 3. Retrieve existing URLs in one query
     stmt = (
         select(Post.link)
-        .where(Post.ticker_id == ticker.id)
+        .where(Post.ticker_id == ticker_obj.id)
         .where(Post.link.in_(scraped_urls))
     )
     existing_links = set(link for (link,) in session.execute(stmt))
@@ -82,19 +86,20 @@ def start_analysis_process(
             "status": "filtering content",
             "progress": 2
         })
-
-        # Step 2: Remove already analyzed posts from scraped posts
-        filter_already_analyzed_posts(session=SessionLocal(), ticker_symbol=ticker, scraped_posts=scrape_results)
-
+        print("\n\n\nFILTERED_POSTS:", scrape_results, "\n\n\n")
+        # Step 2: Remove posts that are already in database and have therefore been analyzed before from scraped posts
+        filtered_posts = filter_analyzed_posts(session=SessionLocal(), ticker_symbol=ticker, scraped_posts=scrape_results)
+        print("\n\n\nFILTERED_POSTS:", filtered_posts, "\n\n\n")
         # Step 3: Save scraped posts to Database
         
-
+        
         # Update task status to completed
         TASKS[task_id].update({
             "status": "completed",
             "progress": 100,
+            "posts": filtered_posts # This is temporary garbage to look at the post output. Forive me
         })
-
+        print(TASKS[task_id])
     except Exception as e:
         # Update task status as failed
         TASKS[task_id].update({
