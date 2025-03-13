@@ -148,6 +148,7 @@ def get_seekingalpha_posts_info(stock_ticker, num_posts):
             comments = get_top_comments(post_id)
 
             post_info = {
+                "source": "seekingalpha",
                 "title": title, 
                 "author": author_name,
                 "time_of_post": time_of_post_formatted,

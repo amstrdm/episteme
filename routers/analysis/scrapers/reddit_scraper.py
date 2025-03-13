@@ -82,6 +82,7 @@ def get_reddit_posts_info(subreddits, stock_name, stock_ticker, timeframe, num_p
                 # we save each post info as a dict then save them all in a list  
                 # to later be converted into a pd dataframe
                 post_info = {
+                    "source": "reddit",
                     "subreddit": subreddit,
                     "title": post.title,
                     "author": str(post.author),
