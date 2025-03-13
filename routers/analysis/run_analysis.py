@@ -5,6 +5,7 @@ from sqlalchemy import select
 from typing import List, Dict
 from sqlalchemy import func
 from ..check_existing_analysis import check_ticker_in_database
+#from commit_filtered_posts import commit_posts_to_db
 from database.models.thesisai import Ticker,  Post
 
 # A simple in-memory store for tasks
@@ -33,12 +34,7 @@ def filter_analyzed_posts(
     
     ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker_symbol.lower()).first()
     # 2. Gather all scraped URLs in a set for quick membership checks
-    scraped_urls = {
-        post["url"]
-        for sublist in scraped_posts
-        for post in sublist
-        if "url" in post
-    }
+    scraped_urls = {post["url"] for post in scraped_posts if "url" in post}
 
     if not scraped_urls:
         # No URL's to filter
@@ -53,10 +49,7 @@ def filter_analyzed_posts(
     existing_links = set(link for (link,) in session.execute(stmt))
 
     # 4. Filter out scraped posts if their url is in 'existing_links'
-    filtered_posts = [
-        [post for post in sublist if post["url"] not in existing_links]
-        for sublist in scraped_posts
-    ]
+    filtered_posts = [post for post in scraped_posts if post["url"] not in existing_links]
 
     return filtered_posts
 
@@ -94,7 +87,7 @@ def start_analysis_process(
         # Step 2: Remove posts that are already in database and have therefore been analyzed before from scraped posts
         filtered_posts = filter_analyzed_posts(session=SessionLocal(), ticker_symbol=ticker, scraped_posts=scrape_results)
         # Step 3: Save scraped posts to Database
-        
+       # commit_posts_to_db(filtered_posts)
         
         # Update task status to completed
         TASKS[task_id].update({

@@ -32,15 +32,8 @@ def scrape_content(ticker:str, title: str, subreddits, reddit_timeframe: str, re
         reddit_data = results.get("reddit", [])
         seekingalpha_data = results.get("seekingalpha", [])
 
-        print("== REDDIT DATA ==")
-        for post in reddit_data:
-            print(post)
-        
-        print("\n== SEEKINGALPHA DATA ==")
-        for post in seekingalpha_data:
-            print(post)
 
-        return [reddit_data, seekingalpha_data]
+        return reddit_data + seekingalpha_data
     except Exception as e:
         raise RuntimeError(f"Scraping failed: {str(e)}") from e
 
