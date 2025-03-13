@@ -33,7 +33,12 @@ def filter_analyzed_posts(
     
     ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker_symbol.lower()).first()
     # 2. Gather all scraped URLs in a set for quick membership checks
-    scraped_urls = {post["url"] for post in scraped_posts if "url" in post}
+    scraped_urls = {
+        post["url"]
+        for sublist in scraped_posts
+        for post in sublist
+        if "url" in post
+    }
 
     if not scraped_urls:
         # No URL's to filter
@@ -49,8 +54,8 @@ def filter_analyzed_posts(
 
     # 4. Filter out scraped posts if their url is in 'existing_links'
     filtered_posts = [
-        p for p in scraped_posts
-        if p["url"] not in existing_links
+        [post for post in sublist if post["url"] not in existing_links]
+        for sublist in scraped_posts
     ]
 
     return filtered_posts
@@ -86,10 +91,8 @@ def start_analysis_process(
             "status": "filtering content",
             "progress": 2
         })
-        print("\n\n\nFILTERED_POSTS:", scrape_results, "\n\n\n")
         # Step 2: Remove posts that are already in database and have therefore been analyzed before from scraped posts
         filtered_posts = filter_analyzed_posts(session=SessionLocal(), ticker_symbol=ticker, scraped_posts=scrape_results)
-        print("\n\n\nFILTERED_POSTS:", filtered_posts, "\n\n\n")
         # Step 3: Save scraped posts to Database
         
         
