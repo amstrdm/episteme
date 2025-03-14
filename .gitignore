@@ -2,3 +2,4 @@ config.env
 test
 test.py
 __pycache__/
+add_data.py
