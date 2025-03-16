@@ -33,11 +33,18 @@ def get_stock_profile(ticker):
     )
     profile_data = response_to_json(profile_response)
     
-    
+    # Get the image separately since we have to check if the URL is valid
+    try:
+        image_url = profile_data.get("image", "N/A")
+        image_valid = image_url != "N/A" and r.get(image_url).status_code == 200
+        image = image_url if image_valid else None
+    except:
+        image = None
+
     stock_info = {
         "symbol": profile_data.get("symbol", "N/A"),
         "companyName": profile_data.get("companyName", "N/A"),
-        "image": profile_data.get("image", "N/A") if r.get(profile_data.get("image")).status_code == 200 else None, # This is a link to an image that gets returned even when there is no image. In that case the link that's returned will just point to a 404
+        "image": image,
         "website": profile_data.get("website", "N/A"),
         "description": profile_data.get("description", "N/A"),
         "price": profile_data.get("price", "N/A"),
