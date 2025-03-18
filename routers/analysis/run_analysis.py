@@ -3,11 +3,14 @@ from sqlalchemy import select
 from typing import List, Dict
 from sqlalchemy import func
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from database.db import SessionLocal
+from database.stocks_db import StockIndexSessionLocal
 from database.models.thesisai import Ticker, Post
 from .scraping import scrape_content
 from .commit_filtered_posts import commit_posts_to_db
 from .check_existing_analysis import check_ticker_in_database
+from .ai.create_description import generate_company_description
 from database.models.stock_index import stocks_table
 
 # A simple in-memory store for tasks
@@ -17,19 +20,36 @@ TASKS = {}
 def add_new_ticker_to_db(ticker_symbol: str):
     print("Creating New Ticker")
     # Get Title of a stock by its ticker
-    with SessionLocal() as session:
+    # REPLACE THIS WITH YFINANCE
+    with StockIndexSessionLocal() as session:
         stmt = select(stocks_table.c.title).where(func.lower(stocks_table.c.ticker) == ticker_symbol.lower())
         title = session.execute(stmt).scalar()
     
-    # create new Ticker
-    ticker = Ticker(
-        symbol=ticker_symbol.lower(),
-        name=title,
-    )
-    session.add(ticker)
-    session.commit()
+    with SessionLocal() as session:
+        # Create new Ticker
+        ticker = Ticker(
+            symbol=ticker_symbol.lower(),
+            name=title,
+            description=generate_company_description(ticker_symbol.lower()),
+            description_last_analyzed=datetime.now()
+        )
+        session.add(ticker)
+        session.commit()
 
+def update_description_if_needed(ticker_obj: Ticker):
+    """
+    Checks when the description saved in DB was generated.
+    If it's been loner than 3 months it generates a new one.
+    """
+    last_analyzed = ticker_obj.description_last_analyzed
+    three_months_ago = datetime.now() - relativedelta(months=3)
 
+    with SessionLocal as session:
+        if last_analyzed < three_months_ago:
+            generate_company_description(str(ticker_obj.symbol).lower())
+            ticker_obj.description_last_analyzed = datetime.now()
+            Session.add(ticker_obj)
+            
 def filter_analyzed_posts(
         session: Session,
         ticker_obj: str,
@@ -84,6 +104,8 @@ def start_analysis_process(
             add_new_ticker_to_db(ticker)
         
         ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
+        
+        update_description_if_needed(ticker_obj)
 
         TASKS[task_id] = {
             "status": "Scraping content",
