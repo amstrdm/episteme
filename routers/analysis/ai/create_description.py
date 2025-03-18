@@ -8,9 +8,6 @@ ENV_PATH = os.getenv("ENV_PATH")
 load_dotenv(ENV_PATH)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-print(ENV_PATH)
-print(OPENAI_API_KEY)
-
 if not OPENAI_API_KEY:
     raise ValueError("Missing OPENAI_API_KEY!")
 
