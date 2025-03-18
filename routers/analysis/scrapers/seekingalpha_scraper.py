@@ -118,7 +118,12 @@ def get_seekingalpha_posts_info(stock_ticker, num_posts):
         for post_id in post_ids:
             querystring = {"id":post_id}
             response = requests.get(url=url, headers=headers, params=querystring)
-            json_data = response.json()
+            
+            try:
+                json_data = response.json()  # Try to parse JSON
+            except ValueError as e:  # Catches JSON decoding errors
+                print("Invalid JSON response:", response.text)
+                raise RuntimeError("Seeking Alpha API returned invalid JSON") from e
 
             title = json_data["data"]["attributes"]["title"]
 
