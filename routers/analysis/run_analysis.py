@@ -6,7 +6,6 @@ import yfinance as yf
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from database.db import SessionLocal
-from database.stocks_db import StockIndexSessionLocal
 from database.models.thesisai import Ticker, Post
 from .scraping import scrape_content
 from .commit_filtered_posts import commit_posts_to_db
@@ -51,7 +50,6 @@ def update_description_if_needed(ticker_obj: Ticker):
             session.commit()
         
 def filter_analyzed_posts(
-        session: Session,
         ticker_obj: str,
         scraped_posts: List[Dict],
 ) -> List[Dict]:
@@ -74,7 +72,8 @@ def filter_analyzed_posts(
         .where(Post.ticker_id == ticker_obj.id)
         .where(Post.link.in_(scraped_urls))
     )
-    existing_links = set(link for (link,) in session.execute(stmt))
+    with SessionLocal() as session:
+        existing_links = set(link for (link,) in session.execute(stmt))
 
     # 3. Filter out scraped posts if their url is in 'existing_links'
     filtered_posts = [post for post in scraped_posts if post["url"] not in existing_links]
@@ -96,14 +95,13 @@ def start_analysis_process(
         ticker = kwargs.get("ticker").upper()
         task_id = kwargs.get("task_id")
 
-        session = SessionLocal()
-
         ticker_exists, _ = check_ticker_in_database(ticker)
         print("TICKER EXISTS:", ticker_exists)
         if not ticker_exists:
             add_new_ticker_to_db(ticker)
         
-        ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
+        with SessionLocal() as session:
+            ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
         
         update_description_if_needed(ticker_obj)
 
@@ -124,7 +122,7 @@ def start_analysis_process(
             "progress": 2
         })
         # Step 2: Remove posts that are already in database and have therefore been analyzed before from scraped posts
-        filtered_posts = filter_analyzed_posts(session=SessionLocal(), ticker_obj=ticker_obj, scraped_posts=scrape_results)
+        filtered_posts = filter_analyzed_posts(ticker_obj=ticker_obj, scraped_posts=scrape_results)
 
         TASKS[task_id].update({
             "status": "saving posts to database",
@@ -133,7 +131,8 @@ def start_analysis_process(
 
         # Step 3: Save scraped posts to Database
         new_posts_ids = commit_posts_to_db(posts_data=filtered_posts, ticker_symbol=ticker, session=SessionLocal())
-
+        
+        
         # Update task status to completed
         TASKS[task_id].update({
             "status": "completed",
