@@ -24,6 +24,7 @@ Core Business Overview:
 
 Describe what the company does, including its primary industry and business model.
 Highlight its flagship products or services (e.g., ARS’s nasal spray) and explain their purpose in the market.
+You are free to use the web and research as much infomation as you need to understand the company and it's strategy better.
 Market and Competitive Positioning:
 
 Summarize the target market and overall market opportunity.
@@ -47,14 +48,14 @@ Your final output should provide investors with a robust, long-term overview of 
 
 """
 
-def summarize_post(description: str, sa_post: str):
+def summarize_post(description: str):
     response = client.responses.create(
         model = "gpt-4o",
         tools=[{"type": "web_search_preview"}],
         input = [
             {
                 "role": "user",
-                "content": prompt+f"Company description:\n{description}\nSeekingalpha Post:\n{sa_post}",
+                "content": prompt+f"Company description:\n{description}\n",
             }
         ]
     )
@@ -64,11 +65,11 @@ def summarize_post(description: str, sa_post: str):
 if __name__ == "__main__":
 
     
-    ticker = yf.Ticker("XYZ")  # Replace "ARS" with the desired ticker symbol
+    ticker = yf.Ticker("TSLA")  # Replace "ARS" with the desired ticker symbol
     company_info = ticker.info
     description = company_info.get("longBusinessSummary", "No description available.")
     market_cap = company_info.get("marketCap", "N/A")
 
     total_info = str(company_info) + description
 
-    print(summarize_post(description=description, sa_post=""))
+    print(summarize_post(description=company_info))
