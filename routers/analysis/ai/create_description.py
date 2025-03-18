@@ -48,14 +48,17 @@ Your final output should provide investors with a robust, long-term overview of 
 
 """
 
-def generate_company_description(description: str):
+def generate_company_description(ticker: str):
+    yf_ticker = yf.Ticker(ticker)
+    company_info = yf_ticker.info
+
     response = client.responses.create(
         model = "gpt-4o",
         tools=[{"type": "web_search_preview"}],
         input = [
             {
                 "role": "user",
-                "content": prompt+f"Company description:\n{description}\n",
+                "content": prompt+f"Company description:\n{company_info}\n",
             }
         ]
     )
@@ -64,12 +67,4 @@ def generate_company_description(description: str):
 
 if __name__ == "__main__":
 
-    
-    ticker = yf.Ticker("TSLA")  # Replace "ARS" with the desired ticker symbol
-    company_info = ticker.info
-    description = company_info.get("longBusinessSummary", "No description available.")
-    market_cap = company_info.get("marketCap", "N/A")
-
-    total_info = str(company_info) + description
-
-    print(generate_company_description(description=company_info))
+    print(generate_company_description(ticker="TSLA"))
