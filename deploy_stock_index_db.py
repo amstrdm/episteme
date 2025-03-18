@@ -1,4 +1,3 @@
-from database.db import engine
 from sqlalchemy import text, Index
 from sqlalchemy.dialects.postgresql import insert
 import os
@@ -30,13 +29,18 @@ idx_title_trgm = Index(
 
 # Check if database exists and create one if it does not
 
-if not database_exists(engine.url):
-    create_database(engine.url)
+if not database_exists(STOCKS_DATABASE_URL):
+    create_database(STOCKS_DATABASE_URL)
     print(f"Database {STOCKS_DB_NAME} created successfully")
 
 else:
     print(f"Database {STOCKS_DB_NAME} exists already")
 
+try:
+    from database.db import engine
+except Exception as e:
+        print("Error importing engine. Are you sure the database was created?:", e)
+        
 # Enable the pg_trgm extension (must be done before creating trigram indexes)
 with engine.connect() as conn:
     try:
