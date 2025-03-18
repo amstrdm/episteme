@@ -3,7 +3,7 @@ from sqlalchemy import  select, func, case, text
 from dotenv import load_dotenv
 import os
 from database.models.stock_index import stocks_table
-from database.db import SessionLocal
+from database.stocks_db import StockIndexSessionLocal
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.getenv("ENV_PATH")
@@ -20,7 +20,7 @@ router = APIRouter()
 def search_stock(q: str = Query(..., min_length=1)):
     # Limit Number of results to keep it responsive
     limit = 10
-    with SessionLocal() as session:
+    with StockIndexSessionLocal() as session:
         # use ILIKE with indexes
         stmt = select(
             stocks_table.c.ticker,
