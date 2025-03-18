@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List, Dict
 from sqlalchemy import func
+import yfinance as yf
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from database.db import SessionLocal
@@ -20,10 +21,8 @@ TASKS = {}
 def add_new_ticker_to_db(ticker_symbol: str):
     print("Creating New Ticker")
     # Get Title of a stock by its ticker
-    # REPLACE THIS WITH YFINANCE
-    with StockIndexSessionLocal() as session:
-        stmt = select(stocks_table.c.title).where(func.lower(stocks_table.c.ticker) == ticker_symbol.lower())
-        title = session.execute(stmt).scalar()
+    yf_ticker = yf.Ticker(ticker_symbol.lower())
+    title = yf_ticker.info.get("longName", "N/A")
     
     with SessionLocal() as session:
         # Create new Ticker
@@ -44,12 +43,13 @@ def update_description_if_needed(ticker_obj: Ticker):
     last_analyzed = ticker_obj.description_last_analyzed
     three_months_ago = datetime.now() - relativedelta(months=3)
 
-    with SessionLocal as session:
-        if last_analyzed < three_months_ago:
+    if last_analyzed < three_months_ago:
+        with SessionLocal() as session:
             generate_company_description(str(ticker_obj.symbol).lower())
             ticker_obj.description_last_analyzed = datetime.now()
-            Session.add(ticker_obj)
-            
+            session.add(ticker_obj)
+            session.commit()
+        
 def filter_analyzed_posts(
         session: Session,
         ticker_obj: str,
