@@ -48,7 +48,7 @@ Your final output should provide investors with a robust, long-term overview of 
 
 """
 
-def summarize_post(description: str):
+def generate_company_description(description: str):
     response = client.responses.create(
         model = "gpt-4o",
         tools=[{"type": "web_search_preview"}],
@@ -72,4 +72,4 @@ if __name__ == "__main__":
 
     total_info = str(company_info) + description
 
-    print(summarize_post(description=company_info))
+    print(generate_company_description(description=company_info))
