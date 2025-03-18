@@ -10,12 +10,14 @@ class Ticker(Base):
     id = Column(Integer, primary_key=True)
     symbol = Column(String(10), unique=True, nullable=False)
     name = Column(String(100))
+    description = Column(String(1000))
     overall_sentiment_score = Column(
         Integer,
         CheckConstraint("overall_sentiment_score BETWEEN 1 and 100"),
         nullable=True
     )
     last_analyzed = Column(DateTime)
+    description_last_analyzed = Column(DateTime)
 
     # Relationships
     posts = relationship("Post", back_populates="ticker", cascade="all, delete-orphan")
