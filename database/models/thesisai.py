@@ -33,6 +33,7 @@ class Post(Base):
     source = Column(String(50), nullable=False)
     title = Column(String(250))
     link = Column(Text)
+    content = Column(Text)
 
     # Relationships 
 
