@@ -1,3 +1,4 @@
+import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List, Dict
@@ -90,11 +91,25 @@ def start_analysis_process(
         # task_id: str,
         **kwargs,
     ):
+    PROGRESS_STAGES = {
+        0: "Initialization",
+        1: "Updating company description",
+        2: "Scraping content",
+        3: "Filtering content",
+        4: "Saving posts to database",
+    }
     try:
-        print("Started analysis")
         ticker = kwargs.get("ticker").upper()
         task_id = kwargs.get("task_id")
 
+        TASKS[task_id] = {
+            "status": PROGRESS_STAGES[0],
+            "progress": 0,
+            "ticker": ticker,
+            "error": None
+        }
+
+        print("Started analysis")
         ticker_exists, _ = check_ticker_in_database(ticker)
         print("TICKER EXISTS:", ticker_exists)
         if not ticker_exists:
@@ -103,34 +118,34 @@ def start_analysis_process(
         with SessionLocal() as session:
             ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
         
+        TASKS[task_id].update({
+            "status": PROGRESS_STAGES[1],
+            "progress": 1
+        })
         update_description_if_needed(ticker_obj)
 
-        TASKS[task_id] = {
-            "status": "Scraping content",
-            "progress": 1,
-            "ticker": ticker,
-            "error": None
-        }
-
-        # Step 1: Scrape content
+        TASKS[task_id].update({
+            "status": PROGRESS_STAGES[2],
+            "progress": 2
+        })
+        # Step 2: Scrape content
         kwargs.pop("task_id")
         scrape_results = scrape_content(**kwargs)
                 
         # Update Task Status
         TASKS[task_id].update({
-            "status": "filtering content",
-            "progress": 2
+            "status": PROGRESS_STAGES[3],
+            "progress": 3
         })
-        # Step 2: Remove posts that are already in database and have therefore been analyzed before from scraped posts
+        # Step 3: Remove posts that are already in database and have therefore been analyzed before from scraped posts
         filtered_posts = filter_analyzed_posts(ticker_obj=ticker_obj, scraped_posts=scrape_results)
 
         TASKS[task_id].update({
-            "status": "saving posts to database",
-            "progress": 3
+            "status": PROGRESS_STAGES[4],
+            "progress": 4
         })
-
         # Step 3: Save scraped posts to Database
-        new_posts_ids = commit_posts_to_db(posts_data=filtered_posts, ticker_symbol=ticker, session=SessionLocal())
+        new_posts_ids = commit_posts_to_db(posts_data=filtered_posts, ticker_symbol=ticker, SessionLocal=SessionLocal)
         
         
         # Update task status to completed
@@ -144,9 +159,14 @@ def start_analysis_process(
         session.commit()
 
     except Exception as e:
-        # Update task status as failed
+        error_stage = TASKS[task_id].get("status")
+        
+        # Log the detailed error information to the log file
+        logging.error(f"Analysis failed for task {task_id}, ticker: {ticker}. Error occurred during {error_stage}: {str(e)}", exc_info=True)
+
+        # Update task with user-friendly error message
         TASKS[task_id].update({
             "status": "failed",
-            "error": str(e),
+            "error": f"An error occurred during {error_stage}. Please try again later or contact support.",
             "progress": 100, # Mark as fully progressed but failed
         })
