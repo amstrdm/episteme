@@ -5,6 +5,7 @@ import html
 import re
 from bs4 import BeautifulSoup
 from datetime import datetime
+import json
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.getenv("ENV_PATH")
@@ -69,7 +70,7 @@ def clean_content(content):
     return text
 
 
-def get_top_comments(post_id, comment_limit=10):
+def get_top_comments(post_id, post_url, comment_limit=10):
     try:
         # First get the id of every comment on the specified post
 
@@ -95,8 +96,15 @@ def get_top_comments(post_id, comment_limit=10):
         json_data_comment_content = response_comment_content.json()
         for comment_data in json_data_comment_content["data"]:
             try:
-                comment_content = comment_data["attributes"]["content"]
-                comment = clean_content(comment_content)
+                comment_content_raw = comment_data["attributes"]["content"]
+                comment_content = clean_content(comment_content_raw)
+                
+                comment_url = post_url+"#comment-"+comment_data["id"]
+
+                comment = {
+                    "content": comment_content,
+                    "url": comment_url
+                }
                 comment_texts.append(comment)
             except IndexError: # Index error indicates the comment has no content in which case we'll ignore it
                 print("No content found")
@@ -150,7 +158,7 @@ def get_seekingalpha_posts_info(stock_ticker, num_posts):
                 unfiltered_content_str += str(point)
             filtered_content = clean_content(unfiltered_content_str)
 
-            comments = get_top_comments(post_id)
+            comments = get_top_comments(post_id=post_id, post_url=absolute_url)
 
             post_info = {
                 "source": "seekingalpha",
@@ -162,10 +170,13 @@ def get_seekingalpha_posts_info(stock_ticker, num_posts):
                 "comments": comments
             }
             post_info_list.append(post_info)
-
         return post_info_list
     except Exception as e:
         raise RuntimeError(f"Failed to scrape Seekingalpha posts: {str(e)}") from e
 
+if __name__ == "__main__":
+    posts = get_seekingalpha_posts_info(stock_ticker="SPRY", num_posts=1)
+    for post in posts:
+        print(json.dumps(post, indent=4))
 
 
