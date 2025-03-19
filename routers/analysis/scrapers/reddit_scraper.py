@@ -62,7 +62,8 @@ def get_top_comments(submission, comment_limit=10):
         for comment in top_comments:
             comment_texts.append({
                 "author": str(comment.author),
-                "content": comment.body
+                "content": comment.body,
+                "url": "https://www.reddit.com"+comment.permalink
             })
         return comment_texts
     except Exception as e:
@@ -88,7 +89,7 @@ def get_reddit_posts_info(subreddits, stock_name, stock_ticker, timeframe, num_p
                     "author": str(post.author),
                     "time_of_post": datetime.fromtimestamp(post.created_utc).strftime('%d-%m-%Y'),
                     "upvotes": str(post.score),
-                    "url": post.url,
+                    "url": "https://www.reddit.com"+post.permalink,
                     "content": post.selftext,
                     "comments": top_comments
                 }
@@ -100,13 +101,12 @@ def get_reddit_posts_info(subreddits, stock_name, stock_ticker, timeframe, num_p
 if __name__ == "__main__":
     # Example usage
     subreddits = ["stocks", "investing", "valueinvesting", "wallstreetbets"]
-    stock_name = "Nubank"
-    stock_ticker = "NU Holdings"
+    stock_name = "SPRY"
+    stock_ticker = "ARS Pharmaceuticals Inc."
     timeframe = "year" #timeframe can be "hour", "day", "week", "month", "year", "all"
-    num_posts = 1
+    num_posts = 5
 
     posts = get_reddit_posts_info(subreddits, stock_name, stock_ticker, timeframe, num_posts)
 
     for post in posts:
         print(json.dumps(post, indent=4), "\n\n")
-
