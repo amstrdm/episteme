@@ -33,6 +33,7 @@ class Post(Base):
     source = Column(String(50), nullable=False)
     title = Column(String(250))
     link = Column(Text)
+    date_of_post = Column(DateTime)
     content = Column(Text)
 
     # Relationships 
@@ -54,7 +55,6 @@ class Point(Base):
         nullable=False
     )
     text = Column(Text, nullable=False)
-    date_of_post = Column(DateTime)
     criticism_exists = Column(Boolean, default=False)
 
     # Relationships
