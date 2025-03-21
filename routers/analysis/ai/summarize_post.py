@@ -35,10 +35,7 @@ def summarize_points_from_post(post_id):
     - A score of 50 is neutral.
     - Above 50 indicates a bullish/positive sentiment.
     - Below 50 indicates a bearish/negative sentiment.
-    Ensure that the sentiment score accurately reflects the economic impact of the point (e.g., challenges or drawbacks should get a score below 50).
-
-    Format each bullet as:
-    - [Thesis Point] [Sentiment Score: X]
+    Ensure that the sentiment score accurately reflects the economic impact of the point (e.g., challenges or drawbacks should get a score below 50)‚
 
     {post_content}
     """
