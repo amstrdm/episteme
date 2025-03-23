@@ -61,22 +61,22 @@ def summarize_points_from_post(post_id):
                     "type": "object",
                     "properties": {
                         "thesis_points": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                            "point": {
-                                "type": "string",
-                                "description": "The extracted thesis point text."
-                            },
-                            "sentiment_score": {
-                                "type": "integer",
-                                "description": "The sentiment score, where 50 is neutral, above 50 is bullish, and below 50 is bearish."
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "point": {
+                                        "type": "string",
+                                        "description": "The extracted thesis point text."
+                                    },
+                                    "sentiment_score": {
+                                        "type": "integer",
+                                        "description": "The sentiment score, where 50 is neutral, above 50 is bullish, and below 50 is bearish."
+                                    }
+                                },
+                                "required": ["point", "sentiment_score"],
+                                "additionalProperties": False
                             }
-                            },
-                            "required": ["point", "sentiment_score"],
-                            "additionalProperties": False
-                        }
                         }
                     },
                     "required": ["thesis_points"],
