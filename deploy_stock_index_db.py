@@ -8,8 +8,6 @@ from config.database_url import STOCKS_DATABASE_URL, STOCKS_DB_NAME
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 JSON_DATA_PATH = os.path.join(BASE_DIR, "./data/sec_tickers.json")
-print(STOCKS_DATABASE_URL)
-print(STOCKS_DB_NAME)
 # Define trigram indexes
 idx_ticker_trgm = Index(
     "idx_stocks_ticker_trgm",
@@ -37,12 +35,12 @@ else:
     print(f"Database {STOCKS_DB_NAME} exists already")
 
 try:
-    from database.db import engine
+    from database.stocks_db import engine as stocks_engine
 except Exception as e:
         print("Error importing engine. Are you sure the database was created?:", e)
         
 # Enable the pg_trgm extension (must be done before creating trigram indexes)
-with engine.connect() as conn:
+with stocks_engine.connect() as conn:
     try:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
     except Exception as e:
@@ -51,7 +49,7 @@ with engine.connect() as conn:
 
 # Create tables if they don't already exist
 try:
-    metadata.create_all(engine)
+    metadata.create_all(stocks_engine)
     print("All Tables created successfully (if not already present)")
 except Exception as e:
     print(f"Error creating tables: {e}")    
@@ -66,7 +64,7 @@ except FileNotFoundError:
 records = list(data.values())
 
 # Insert Data into the table
-with engine.connect() as conn:
+with stocks_engine.connect() as conn:
     try:
         conn.execute(text("TRUNCATE stocks;")) # We clear all existing data
     except Exception as e:
