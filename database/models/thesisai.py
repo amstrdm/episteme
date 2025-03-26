@@ -1,7 +1,7 @@
 from sqlalchemy import Text, Column, Integer, String, DateTime, Boolean, ForeignKey, CheckConstraint
 from sqlalchemy.orm import  relationship
 from sqlalchemy.ext.declarative import declarative_base
-
+from sqlalchemy.dialects.postgresql import VECTOR
 
 Base = declarative_base()
 
@@ -56,7 +56,8 @@ class Point(Base):
     )
     text = Column(Text, nullable=False)
     criticism_exists = Column(Boolean, default=False)
-
+    embedding = Column(VECTOR(1536))
+    
     # Relationships
     ticker = relationship("Ticker", back_populates="points")
     post = relationship("Post", back_populates="points")
