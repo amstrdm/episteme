@@ -1,7 +1,9 @@
-from openai import OpenAI
+
+from openai import AsyncOpenAI
 from dotenv import load_dotenv
 import os
 import json
+import asyncio
 from database.db import SessionLocal
 from database.models.thesisai import Post
 
@@ -11,11 +13,13 @@ load_dotenv(ENV_PATH)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not OPENAI_API_KEY:
-    raise ValueError("COULD NOT FIND OPENAI API KEY IN summarize_post.py")
-client = OpenAI(api_key=OPENAI_API_KEY)
+    raise ValueError("OPENAI_API_KEY ENVIRONMENT VARIABLE IS EITHER EMPTY OR DOESN'T EXIST")
+client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
-def summarize_points_from_post(post_id):
-
+async def summarize_points_from_post(post_id):
+    """
+    Summarizes main investment points from the post associated with the gigen post_id using GPT-4o.
+    """
     with SessionLocal() as session:
         post_obj = session.query(Post).filter(Post.id == post_id).first()
         
@@ -47,7 +51,7 @@ def summarize_points_from_post(post_id):
     {post_content}
     """
 
-    response = client.responses.create(
+    response = await client.responses.create(
         model="gpt-4o",
         input=[
             {"role": "system", "content": system_prompt},
@@ -86,8 +90,12 @@ def summarize_points_from_post(post_id):
         }
     )
 
-    result_dict = json.loads(response.output_text)
+    result_dict = json.loads(response.output_text).get("thesis_points")
+    for point in result_dict:
+        point["post_id"] = post_id
     return result_dict
 
-summarization = summarize_points_from_post(23)
-print(summarization)
+async def summarize_all_posts(post_ids):
+    tasks = [asyncio.create_task(summarize_points_from_post(pid)) for pid in post_ids]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    return [point for res in results if isinstance(res, list) for point in res] # This just flattens the nested list
