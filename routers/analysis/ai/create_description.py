@@ -9,7 +9,7 @@ load_dotenv(ENV_PATH)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not OPENAI_API_KEY:
-    raise ValueError("Missing OPENAI_API_KEY in create_description.py!")
+    raise ValueError("OPENAI_API_KEY ENVIRONMENT VARIABLE IS EITHER EMPTY OR DOESN'T EXIST")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
