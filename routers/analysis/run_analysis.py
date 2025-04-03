@@ -1,18 +1,20 @@
 import logging
-from sqlalchemy.orm import Session
+import numpy as np
 from sqlalchemy import select
 from typing import List, Dict
 from sqlalchemy import func
 import yfinance as yf
 from datetime import datetime
+import asyncio
 from dateutil.relativedelta import relativedelta
 from database.db import SessionLocal
-from database.models.thesisai import Ticker, Post
+from database.models.thesisai import Ticker, Post, Point
 from .scraping import scrape_content
 from .commit_filtered_posts import commit_posts_to_db
 from .check_existing_analysis import check_ticker_in_database
 from .ai.create_description import generate_company_description
-from database.models.stock_index import stocks_table
+from .ai.summarize_post import summarize_points_from_post
+from .ai.filter_points import remove_duplicate_points
 
 # A simple in-memory store for tasks
 # Keys = task_id, Value = dict with status, progress, error and result
@@ -38,7 +40,7 @@ def add_new_ticker_to_db(ticker_symbol: str):
 def update_description_if_needed(ticker_obj: Ticker):
     """
     Checks when the description saved in DB was generated.
-    If it's been loner than 3 months it generates a new one.
+    If it's been longer than 3 months it generates a new one.
     """
     last_analyzed = ticker_obj.description_last_analyzed
     three_months_ago = datetime.now() - relativedelta(months=3)
@@ -81,7 +83,27 @@ def filter_analyzed_posts(
 
     return filtered_posts
 
-def start_analysis_process(
+async def summarize_all_posts(post_ids: List):
+    tasks = [asyncio.create_task(summarize_points_from_post(pid)) for pid in post_ids]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    return results
+
+def save_new_point(ticker_obj: Ticker, post_id: int, text: str, sentiment_score: int, embedding: np.array):
+    """
+    Save a new thesis point to the database, including its computed embedding.
+    """
+    with SessionLocal() as session:
+        new_point = Point(
+            ticker_id=ticker_obj.id,
+            post_id=post_id,
+            sentiment_score=sentiment_score,
+            text=text,
+            embedding=embedding.tolist()  # Convert numpy array to list for storage
+        )
+        session.add(new_point)
+        session.commit()
+
+async def start_analysis_process(
         # ticker:str,
         # title: str, 
         # subreddits: List[str], 
@@ -97,6 +119,8 @@ def start_analysis_process(
         2: "Scraping content",
         3: "Filtering content",
         4: "Saving posts to database",
+        5: "Extracting theses from posts",
+        6: "Filtering out duplicate ideas",
     }
     try:
         ticker = kwargs.get("ticker").upper()
@@ -117,37 +141,58 @@ def start_analysis_process(
         
         with SessionLocal() as session:
             ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
-        
+
+        # Step 1: Generate Description
         TASKS[task_id].update({
             "status": PROGRESS_STAGES[1],
             "progress": 1
         })
         update_description_if_needed(ticker_obj)
 
+        # Step 2: Scrape content
         TASKS[task_id].update({
             "status": PROGRESS_STAGES[2],
             "progress": 2
         })
-        # Step 2: Scrape content
         kwargs.pop("task_id")
         scrape_results = scrape_content(**kwargs)
-                
-        # Update Task Status
+        
+        # Step 3: Remove posts that are already in database and have therefore been analyzed before from scraped posts
         TASKS[task_id].update({
             "status": PROGRESS_STAGES[3],
             "progress": 3
         })
-        # Step 3: Remove posts that are already in database and have therefore been analyzed before from scraped posts
         filtered_posts = filter_analyzed_posts(ticker_obj=ticker_obj, scraped_posts=scrape_results)
 
+        # Step 4: Save scraped posts to Database
         TASKS[task_id].update({
             "status": PROGRESS_STAGES[4],
             "progress": 4
         })
-        # Step 3: Save scraped posts to Database
         new_posts_ids = commit_posts_to_db(posts_data=filtered_posts, ticker_symbol=ticker, SessionLocal=SessionLocal)
         
+        # Step 5: Summarize saved posts
+        TASKS[task_id].update({
+            "status": PROGRESS_STAGES[5],
+            "progress": 5
+        })
+        summarization_results = await summarize_all_posts(new_posts_ids)
+        new_points = []
+        for result in summarization_results:
+            if isinstance(result, Exception):
+                logging.warning("Instance of Summarization Step failed:", result)
+                continue
+            new_points.append(result)
         
+        # Step 6: Filter out duplicate points
+        TASKS[task_id].update({
+            "status": PROGRESS_STAGES[6],
+            "progress": 6
+        })
+
+        # for new_p in new_points:
+        #    remove_duplicate_points(new_points=new_p, ticker_obj=ticker_obj)
+        # Step 5: 
         # Update task status to completed
         TASKS[task_id].update({
             "status": "completed",
@@ -155,8 +200,9 @@ def start_analysis_process(
         })
         print(TASKS[task_id])
 
-        ticker_obj.last_analyzed = datetime.now()
-        session.commit()
+        with SessionLocal() as session:
+            ticker_obj.last_analyzed = datetime.now()
+            session.commit()
 
     except Exception as e:
         error_stage = TASKS[task_id].get("status")
