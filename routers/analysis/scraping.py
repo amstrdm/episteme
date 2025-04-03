@@ -26,8 +26,7 @@ def scrape_content(ticker:str, title: str, subreddits, reddit_timeframe: str, re
                     results[source_name] = data
                 except Exception as e:
                     # Log and re-raise with context
-                    print(f"Error scraping {source_name}: {e}")
-                    raise RuntimeError(f"failed to scrape {source_name}") from e
+                    raise RuntimeError(f"failed to scrape {source_name}:", e) from e
         # 'results' now holds data from both threads
         reddit_data = results.get("reddit", [])
         seekingalpha_data = results.get("seekingalpha", [])
