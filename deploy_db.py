@@ -1,5 +1,4 @@
 from database.models.thesisai import Base
-from database.db import engine
 from sqlalchemy_utils import database_exists, create_database
 from config.database_url import DATABASE_URL, DB_NAME
 from sqlalchemy import text
@@ -14,14 +13,6 @@ def create_database_if_not_exists():
             print(f"Database {DB_NAME} exists already\n")
     except Exception as e:
         print ("Error Creating Database:", e)
-
-def create_vector_extension():
-    with engine.connect() as conn:
-        try:
-            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-        except Exception as e:
-            print(f"Could not create vector extension: {e}")
-        conn.commit()
 
 def create_tables():
     """Creates tables defined in SQLAlchemy models if they don't already exist"""
@@ -38,11 +29,12 @@ def create_tables():
 
 
 if __name__ == "__main__":
+    print(f"DATABASE_URL: {DATABASE_URL}")
+    print(f"DB_NAME: {DB_NAME}\n")
+
     # Create Database if it doesn't exist
     print("CREATING DATABASE")
     create_database_if_not_exists()
-    print("CREATING VECTOR EXTENSION")
-    create_vector_extension()
     print("CREATING TABLES")
     # Create Tables
     create_tables()

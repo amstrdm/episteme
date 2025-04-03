@@ -1,7 +1,7 @@
-from sqlalchemy import Text, Column, Integer, String, DateTime, Boolean, ForeignKey, CheckConstraint
+from sqlalchemy import Text, Column, Integer, String, DateTime, Boolean, ForeignKey, CheckConstraint, Float
 from sqlalchemy.orm import  relationship
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import VECTOR
+from sqlalchemy.dialects.postgresql import ARRAY
 
 Base = declarative_base()
 
@@ -33,7 +33,7 @@ class Post(Base):
     source = Column(String(50), nullable=False)
     title = Column(String(250))
     link = Column(Text)
-    date_of_post = Column(DateTime)
+    # date_of_post = Column(DateTime)
     content = Column(Text)
 
     # Relationships 
@@ -56,7 +56,7 @@ class Point(Base):
     )
     text = Column(Text, nullable=False)
     criticism_exists = Column(Boolean, default=False)
-    embedding = Column(VECTOR(1536))
+    embedding = Column(ARRAY(Float))
     
     # Relationships
     ticker = relationship("Ticker", back_populates="points")
