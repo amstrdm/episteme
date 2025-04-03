@@ -29,16 +29,14 @@ def find_reddit_posts(subreddit, stock_name, stock_ticker, timeframe, num_posts)
     try:
         # Fetch posts from the subreddit
         subreddit_instance = reddit.subreddit(subreddit)
-        query = f"{stock_name} OR {stock_ticker}"
+        query = f'"{stock_name}" OR "{stock_ticker}"'
         posts = subreddit_instance.search(query, limit=num_posts, time_filter=timeframe)
-
         # Filter posts based on selftext length
         filtered_data = [post for post in posts if len(post.selftext) > 100]
-
         # if the post is from r/wallstreetbets we need to filter it out if it's not a DD 
         # we do that by checking if the posts flair is "DD"
         if subreddit == "wallstreetbets":
-            filtered_data = [post for post in filtered_data if post.link_flair_text == "DD"]   
+            filtered_data = [post for post in filtered_data if post.link_flair_text == "DD" or post.link_flair_text == "Discussion"]   
         return filtered_data
     except Exception as e:
         raise RuntimeError(f"Failed to fetch posts from subreddit '{subreddit}': {str(e)}") from e
