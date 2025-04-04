@@ -101,5 +101,5 @@ class Comment(Base):
     criticisms = relationship("Criticism", back_populates="comment", cascade="all, delete-orphan")
     
     def __repr__(self):
-        return f"<Comment(id={self.id}, post_id={self.post_id}, author='{self.author}', date_posted={self.date_posted})>"
+        return f"<Comment(id={self.id}, post_id={self.post_id}, author='{self.author}'>"
 
