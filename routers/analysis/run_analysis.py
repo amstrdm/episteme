@@ -204,8 +204,6 @@ async def start_analysis_process(
             "progress": 100,
         })
         print(TASKS[task_id])
-        popped = [point for point in filtered_points.pop("embedding")]
-        print("FILTERED POINTS:", popped)
 
         with SessionLocal() as session:
             ticker_obj.last_analyzed = datetime.now()
