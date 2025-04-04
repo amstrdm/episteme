@@ -40,6 +40,7 @@ class Post(Base):
 
     ticker = relationship("Ticker", back_populates="posts")
     points = relationship("Point", back_populates="post", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Post(id{self.id}, source='{self.source}', title='{self.title}')>"
@@ -70,6 +71,7 @@ class Criticism(Base):
     __tablename__ = "criticisms"
     id = Column(Integer, primary_key=True)
     point_id = Column(Integer, ForeignKey("points.id"), nullable=False)
+    comment_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
     text = Column(Text, nullable=False)
     date_posted = Column(DateTime)
     validity_score = Column(
@@ -81,9 +83,22 @@ class Criticism(Base):
     # Relationships 
 
     point = relationship("Point", back_populates="criticisms")
-
+    comment = relationship("Comment", back_populates="criticisms")
     def __repr__(self):
         return f"<Criticism(id={self.id}, valdiity_score={self.validity_score})>"
 
+class Comment(Base):
+    __tablename_ = "comments"
+    id = Column(Integer, primary_key=True)
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
+    content = Column(Text, nullable=False)
+    author = Column(String(100), nullable=True)
+    
+    # Relationships
 
+    post = relationship("Post", back_populates="comments")
+    criticisms = relationship("Criticism", back_populates="comment", cascade="all, delete-orphan")
+    
+    def __repr__(self):
+        return f"<Comment(id={self.id}, post_id={self.post_id}, author='{self.author}', date_posted={self.date_posted})>"
 
