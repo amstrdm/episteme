@@ -1,4 +1,4 @@
-import cProfile
+import asyncio
 from typing import List, Dict
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -24,7 +24,8 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 # Utility Functions
 # -------------------------
 
-finlang_model = SentenceTransformer("FinLang/finance-embeddings-investopedia")
+#finlang_model = SentenceTransformer("FinLang/finance-embeddings-investopedia")
+finlang_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def compute_finlang_embedding(text:str) -> np.array:
     """
@@ -66,7 +67,7 @@ def get_existing_points_as_dicts(ticker_obj: Ticker) -> List:
 # Duplicate Filtering Function
 # -------------------------
 
-def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshold: float = 0.40) -> Dict:
+async def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshold: float = 0.40) -> Dict:
     """
     Remove duplicate thesis points by comparing new points against those already stored in the database.
     
@@ -79,17 +80,11 @@ def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshold: flo
     
     Returns a dictionary with the filtered (unique) thesis points.
     """
-    # Retrieve existing points (including embeddings)
+    # Retrieve existing points (including embeddings) & Prepare lists for existing embeddings and texts
     existing_points = get_existing_points_as_dicts(ticker_obj)
-    
-    # Prepare lists for existing embeddings and texts
-    existing_embeddings = []
-    existing_point_texts = []
-    for pt in existing_points:
-        if pt.get("embedding"):
-            existing_embeddings.append(np.array(pt["embedding"]))  # For cosine similarity
-            existing_point_texts.append(pt.get("point"))  # For GPT comparison
-    
+    existing_embeddings = [np.array(pt["embedding"]) for pt in existing_points if pt.get("embedding")]
+    existing_point_texts = [pt.get("point") for pt in existing_points if pt.get("point")]
+
     unique_points = []
     # Maintain two lists for candidate points:
     # 1. candidate_points_for_gpt: sent to GPT (without embedding)
@@ -97,20 +92,29 @@ def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshold: flo
     candidate_points_for_gpt = []
     candidate_points_full = []
     
-    # Process each new thesis point
+    # Create a list of tasks to compute embeddings concurrently.
+    # We'll only compute embeddings for points that have a valid post_id.
+    tasks = []
+    valid_new_points = []
     for pt in new_points:
-        text = pt["point"]
-        sentiment = pt["sentiment_score"]
-
         if "post_id" not in pt:
             logging.warning(f"Point dictionary for point '{pt}' does not include post_id. Skipping...")
             continue
+        valid_new_points.append(pt)
+        # Offload compute_finlang_embedding to a thread.
+        tasks.append(asyncio.to_thread(compute_finlang_embedding, pt["point"]))
+    
+    # Gather all embeddings concurrently 
+    new_embeddings = await asyncio.gather(*tasks)
+
+    # Iterate through the points and their computed embeddings.
+    for pt, new_embedding in zip(valid_new_points, new_embeddings):
+        text = pt["point"]
+        sentiment = pt["sentiment_score"]
         post_id = pt["post_id"]
-        
-        new_embedding = compute_finlang_embedding(text)
         emb_list = new_embedding.tolist()
         
-        # Compare with existing embeddings
+        # Compare with existing embeddings to check for duplicates
         is_duplicate = False
         if existing_embeddings:
             sims = [cosine_sim(new_embedding, emb) for emb in existing_embeddings]
@@ -193,7 +197,7 @@ def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshold: flo
         gpt_filtered = json.loads(response.output_text)
         filtered_candidates = gpt_filtered.get("thesis_points", [])
 
-        # For each candidate returned by GPT, look up the full candidate (with embedding)
+        # For each candidate returned by GPT, look up the full candidate (the one with embedding)
         for candidate in filtered_candidates:
             # Here we're matching on both 'post_id' and 'point' to be safe
             full_candidate = next(
@@ -212,7 +216,7 @@ new_points_list = [{'point': 'Epinephrine nasal spray available by prescription 
 with SessionLocal() as session:
     ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
 
-results = remove_duplicate_points(new_points=new_points_list, ticker_obj=ticker_obj)
+results = asyncio.run(remove_duplicate_points(new_points=new_points_list, ticker_obj=ticker_obj))
 for result in results:
     result.pop("embedding", None)
 print(results)
