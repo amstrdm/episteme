@@ -95,7 +95,12 @@ async def summarize_points_from_post(post_id):
         point["post_id"] = post_id
     return result_dict
 
+def run_summarize_points_from_post(post_id):
+    import asyncio
+    return asyncio.run(summarize_points_from_post(post_id))
+
 async def summarize_all_posts(post_ids):
-    tasks = [asyncio.create_task(summarize_points_from_post(pid)) for pid in post_ids]
+    tasks = [asyncio.to_thread(run_summarize_points_from_post, pid) for pid in post_ids]
     results = await asyncio.gather(*tasks, return_exceptions=True)
-    return [point for res in results if isinstance(res, list) for point in res] # This just flattens the nested list
+    # Flatten the list of lists
+    return [point for res in results if isinstance(res, list) for point in res]
