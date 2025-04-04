@@ -92,6 +92,7 @@ class Comment(Base):
     id = Column(Integer, primary_key=True)
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
     content = Column(Text, nullable=False)
+    link = Column(Text)
     author = Column(String(100), nullable=True)
     
     # Relationships
