@@ -63,8 +63,8 @@ def analysis_status(task_id: str):
         raise HTTPException(status_code=404, detail="Task not found")
     
     return {
-        "status": task.get("status"),
-        "progress": task.get("progress"),
-        "error": task.get("error"),
-        "ticker": task.get("ticker"),
+        "status": task.get("status", "unknown"),
+        "progress": task.get("progress", 0),
+        "error": task.get("error", ""),
+        "ticker": task.get("ticker", ""),
     }
