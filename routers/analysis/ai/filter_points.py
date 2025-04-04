@@ -105,7 +105,7 @@ async def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshol
         tasks.append(asyncio.to_thread(compute_finlang_embedding, pt["point"]))
     
     # Gather all embeddings concurrently 
-    new_embeddings = await asyncio.gather(*tasks)
+    new_embeddings = await asyncio.gather(*tasks, return_exceptions=True)
 
     # Iterate through the points and their computed embeddings.
     for pt, new_embedding in zip(valid_new_points, new_embeddings):
