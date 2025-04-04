@@ -1,7 +1,7 @@
 from typing import List, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from database.models.thesisai import Post, Ticker
+from database.models.thesisai import Post, Ticker, Comment
 from .check_existing_analysis import check_ticker_in_database
 
 
@@ -32,6 +32,15 @@ def commit_posts_to_db(
             )
             session.add(new_post)
             session.flush()
+
+            for comment in post.get("comments"):
+                new_comment = Comment(
+                    content = comment.get("content"),
+                    link = comment.get("url"),
+                    author = comment.get("author", None)
+                )
+                new_post.comments.append(new_comment)            
+            
             new_post_ids.append(new_post.id)
         session.commit()
     
