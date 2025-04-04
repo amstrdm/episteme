@@ -155,8 +155,8 @@ async def start_analysis_process(
             "progress": 2
         })
         kwargs.pop("task_id")
-        scrape_results = scrape_content(**kwargs)
-        
+        scrape_results = await asyncio.to_thread(scrape_content, **kwargs)
+
         # Step 3: Remove posts that are already in database and have therefore been analyzed before from scraped posts
         TASKS[task_id].update({
             "status": PROGRESS_STAGES[3],
@@ -180,18 +180,23 @@ async def start_analysis_process(
         new_points = []
         for result in summarization_results:
             if isinstance(result, Exception):
-                logging.warning("Instance of Summarization Step failed:", result)
+                logging.warning(f"Instance of Summarization Step failed: {result}")
                 continue
-            new_points.append(result)
-        
+            new_points.extend(result)
         # Step 6: Filter out duplicate points
         TASKS[task_id].update({
             "status": PROGRESS_STAGES[6],
             "progress": 6
         })
 
-        # for new_p in new_points:
-        #    remove_duplicate_points(new_points=new_p, ticker_obj=ticker_obj)
+        filtering_results = await remove_duplicate_points(new_points, ticker_obj)
+        filtered_points = []
+        for result in filtering_results:
+            if isinstance(result, Exception):
+                logging.warning(f"Instance of filtering duplicates step failed:{result}")
+                continue
+            filtered_points.append(result)
+            
         # Step 5: 
         # Update task status to completed
         TASKS[task_id].update({
@@ -199,6 +204,8 @@ async def start_analysis_process(
             "progress": 100,
         })
         print(TASKS[task_id])
+        popped = [point for point in filtered_points.pop("embedding")]
+        print("FILTERED POINTS:", popped)
 
         with SessionLocal() as session:
             ticker_obj.last_analyzed = datetime.now()
