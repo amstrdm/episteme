@@ -33,7 +33,7 @@ class Post(Base):
     source = Column(String(50), nullable=False)
     title = Column(String(250))
     link = Column(Text)
-    # date_of_post = Column(DateTime)
+    date_of_post = Column(DateTime)
     content = Column(Text)
 
     # Relationships 
