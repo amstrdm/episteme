@@ -88,7 +88,7 @@ class Criticism(Base):
         return f"<Criticism(id={self.id}, valdiity_score={self.validity_score})>"
 
 class Comment(Base):
-    __tablename_ = "comments"
+    __tablename__ = "comments"
     id = Column(Integer, primary_key=True)
     post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
     content = Column(Text, nullable=False)
