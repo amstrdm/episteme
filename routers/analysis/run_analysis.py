@@ -10,12 +10,13 @@ from dateutil.relativedelta import relativedelta
 from database.db import SessionLocal
 from database.models.thesisai import Ticker, Post, Point
 from .scraping import scrape_content
-from .commit_filtered_posts import commit_posts_to_db
+from .commit_to_db import commit_posts_to_db, commit_final_points_to_db, commit_overall_sentiment_score
+from .ticker_sentiment import calculate_ticker_sentiment
 from .check_existing_analysis import check_ticker_in_database
 from .ai.create_description import generate_company_description
 from .ai.summarize_post import summarize_points_from_post
 from .ai.filter_points import remove_duplicate_points
-
+from .ai.extract_criticisms import analyze_comments
 # A simple in-memory store for tasks
 # Keys = task_id, Value = dict with status, progress, error and result
 TASKS = {}
@@ -121,6 +122,10 @@ async def start_analysis_process(
         4: "Saving posts to database",
         5: "Extracting theses from posts",
         6: "Filtering out duplicate ideas",
+        7: "Validating criticism from comments",
+        8: "Saving final points & criticisms to database",
+        9: "Calculating ticker sentiment",
+        10: "Analysis completed"
     }
     try:
         ticker = kwargs.get("ticker").upper()
@@ -135,7 +140,6 @@ async def start_analysis_process(
 
         print("Started analysis")
         ticker_exists, _ = check_ticker_in_database(ticker)
-        print("TICKER EXISTS:", ticker_exists)
         if not ticker_exists:
             add_new_ticker_to_db(ticker)
         
@@ -183,6 +187,7 @@ async def start_analysis_process(
                 logging.warning(f"Instance of Summarization Step failed: {result}")
                 continue
             new_points.extend(result)
+
         # Step 6: Filter out duplicate points
         TASKS[task_id].update({
             "status": PROGRESS_STAGES[6],
@@ -193,21 +198,51 @@ async def start_analysis_process(
         filtered_points = []
         for result in filtering_results:
             if isinstance(result, Exception):
-                logging.warning(f"Instance of filtering duplicates step failed:{result}")
+                logging.warning(f"Instance of filtering duplicates step failed: {result}")
                 continue
             filtered_points.append(result)
-            
-        # Step 5: 
-        # Update task status to completed
+        
+        # Step 7: Extract & assign criticisms from comments
         TASKS[task_id].update({
-            "status": "completed",
-            "progress": 100,
+            "status": PROGRESS_STAGES[7],
+            "progress": 7
         })
-        print(TASKS[task_id])
+        criticism_results = await analyze_comments(ticker, filtered_points)
+        points_with_criticisms = []
+        for result in criticism_results:
+            if isinstance(result, Exception):
+                logging.warning(f"Instance of extracting criticisms step failed: {result}")
+                continue
+            points_with_criticisms.append(result)
+
+        # Step 8: Save final points to database
+        TASKS[task_id].update({
+            "status": PROGRESS_STAGES[8],
+            "progress": 8
+        })
+
+        commit_final_points_to_db(points_with_criticisms)
+
+        # Step 9: Calculate and commit overall sentiment score to ticker column & update last_analyzed entry in DB
+        
+        TASKS[task_id].update({
+            "status": PROGRESS_STAGES[9],
+            "progress": 9
+        })
+
+        overall_sentiment_score = calculate_ticker_sentiment()
+        commit_overall_sentiment_score(ticker_obj.id, overall_sentiment_score)
 
         with SessionLocal() as session:
             ticker_obj.last_analyzed = datetime.now()
             session.commit()
+
+        # Step 10: Update task status to completed
+        TASKS[task_id].update({
+            "status": "completed",
+            "progress": 10,
+        })
+        print(TASKS[task_id])
 
     except Exception as e:
         error_stage = TASKS[task_id].get("status")
