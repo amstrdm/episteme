@@ -230,10 +230,12 @@ async def start_analysis_process(
             "progress": 9
         })
 
-        overall_sentiment_score = calculate_ticker_sentiment()
+        overall_sentiment_score = calculate_ticker_sentiment(ticker_obj)
         commit_overall_sentiment_score(ticker_obj.id, overall_sentiment_score)
 
         with SessionLocal() as session:
+            # Object is from a detached session so we can read but not write, therefore we have to get a new obj
+            ticker_obj = session.get(Ticker, ticker_obj.id)
             ticker_obj.last_analyzed = datetime.now()
             session.commit()
 
