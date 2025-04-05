@@ -2,10 +2,15 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from routers import stock_query, create_analysis
 from routers import check_analysis_route
+from routers import return_db_contents
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 
-logging.basicConfig(filename="errors.log", level=logging.ERROR, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    filename="errors.log", 
+    encoding="utf-8",
+    level=logging.ERROR, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 app = FastAPI()
 
@@ -29,3 +34,4 @@ async def generic_exception_handler(request: Request, exc: Exception):
 app.include_router(stock_query.router)
 app.include_router(check_analysis_route.router)
 app.include_router(create_analysis.router)
+app.include_router(return_db_contents.router)
