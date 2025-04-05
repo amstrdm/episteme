@@ -49,7 +49,9 @@ def commit_posts_to_db(
     return new_post_ids
 
 def commit_final_points_to_db(points_list: list[dict]):        
-
+    if not points_list:
+        return
+    
     with SessionLocal() as session:
         post_obj = session.query(Post).filter(Post.id == points_list[0].get("post_id")).first() # Doesnt't matter which post we query since they all have the same ticker.id
         ticker_id = post_obj.ticker_id
