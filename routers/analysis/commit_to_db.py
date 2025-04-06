@@ -1,18 +1,24 @@
 from typing import List, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from datetime import datetime
 from database.models.thesisai import Post, Ticker, Comment
-from database.db import SessionLocal
+from database.db import session_scope
 from database.models.thesisai import Point, Criticism
 from .check_existing_analysis import check_ticker_in_database
 
 
+def convert_str_to_datetime(date_str: str) -> datetime:
+    dt_object = datetime.strptime(date_str, "%m-%d-%Y")
+    formatted_date = dt_object.strftime("%Y-%m-%d %H:%M")
+    return formatted_date
+
 def commit_posts_to_db(
         posts_data: List[Dict],
         ticker_symbol: str,
-        SessionLocal: Session
+        session_scope: Session
         ):
-    with SessionLocal() as session:
+    with session_scope() as session:
         # We shouldn't have to do this since it's already done when filtering out posts in run_analysis but better safe than sorry.    
         ticker_exists, _ = check_ticker_in_database(ticker_symbol)
         if not ticker_exists:
@@ -30,7 +36,8 @@ def commit_posts_to_db(
                 source=post.get("source"),
                 title=post.get("title", ""),
                 link=post.get("url"),
-                content=post.get("content")
+                content=post.get("content"),
+                date_of_post=convert_str_to_datetime(post.get("time_of_post"), None)
             )
             session.add(new_post)
             session.flush()
@@ -52,7 +59,7 @@ def commit_final_points_to_db(points_list: list[dict]):
     if not points_list:
         return
     
-    with SessionLocal() as session:
+    with session_scope() as session:
         post_obj = session.query(Post).filter(Post.id == points_list[0].get("post_id")).first() # Doesnt't matter which post we query since they all have the same ticker.id
         ticker_id = post_obj.ticker_id
 
@@ -78,7 +85,7 @@ def commit_final_points_to_db(points_list: list[dict]):
         session.commit()
 
 def commit_overall_sentiment_score(ticker_id: int, overall_sentiment_score: int):
-    with SessionLocal() as session:
+    with session_scope() as session:
         ticker_obj = session.get(Ticker, ticker_id)
         ticker_obj.overall_sentiment_score = overall_sentiment_score
         session.commit()
