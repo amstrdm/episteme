@@ -7,7 +7,7 @@ import yfinance as yf
 from datetime import datetime
 import asyncio
 from dateutil.relativedelta import relativedelta
-from database.db import SessionLocal
+from database.db import session_scope
 from database.models.thesisai import Ticker, Post, Point
 from .scraping import scrape_content
 from .commit_to_db import commit_posts_to_db, commit_final_points_to_db, commit_overall_sentiment_score
@@ -27,7 +27,7 @@ def add_new_ticker_to_db(ticker_symbol: str):
     yf_ticker = yf.Ticker(ticker_symbol.lower())
     title = yf_ticker.info.get("longName", "N/A")
     
-    with SessionLocal() as session:
+    with session_scope() as session:
         # Create new Ticker
         ticker = Ticker(
             symbol=ticker_symbol.lower(),
@@ -47,7 +47,7 @@ def update_description_if_needed(ticker_obj: Ticker):
     three_months_ago = datetime.now() - relativedelta(months=3)
 
     if last_analyzed < three_months_ago:
-        with SessionLocal() as session:
+        with session_scope() as session:
             generate_company_description(str(ticker_obj.symbol).lower())
             ticker_obj.description_last_analyzed = datetime.now()
             session.add(ticker_obj)
@@ -76,7 +76,7 @@ def filter_analyzed_posts(
         .where(Post.ticker_id == ticker_obj.id)
         .where(Post.link.in_(scraped_urls))
     )
-    with SessionLocal() as session:
+    with session_scope() as session:
         existing_links = set(link for (link,) in session.execute(stmt))
 
     # 3. Filter out scraped posts if their url is in 'existing_links'
@@ -93,7 +93,7 @@ def save_new_point(ticker_obj: Ticker, post_id: int, text: str, sentiment_score:
     """
     Save a new thesis point to the database, including its computed embedding.
     """
-    with SessionLocal() as session:
+    with session_scope() as session:
         new_point = Point(
             ticker_id=ticker_obj.id,
             post_id=post_id,
@@ -143,7 +143,7 @@ async def start_analysis_process(
         if not ticker_exists:
             add_new_ticker_to_db(ticker)
         
-        with SessionLocal() as session:
+        with session_scope() as session:
             ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
 
         # Step 1: Generate Description
@@ -173,7 +173,7 @@ async def start_analysis_process(
             "status": PROGRESS_STAGES[4],
             "progress": 4
         })
-        new_posts_ids = commit_posts_to_db(posts_data=filtered_posts, ticker_symbol=ticker, SessionLocal=SessionLocal)
+        new_posts_ids = commit_posts_to_db(posts_data=filtered_posts, ticker_symbol=ticker, session_scope=session_scope)
         
         # Step 5: Summarize saved posts
         TASKS[task_id].update({
@@ -233,7 +233,7 @@ async def start_analysis_process(
         overall_sentiment_score = calculate_ticker_sentiment(ticker_obj)
         commit_overall_sentiment_score(ticker_obj.id, overall_sentiment_score)
 
-        with SessionLocal() as session:
+        with session_scope() as session:
             # Object is from a detached session so we can read but not write, therefore we have to get a new obj
             ticker_obj = session.get(Ticker, ticker_obj.id)
             ticker_obj.last_analyzed = datetime.now()

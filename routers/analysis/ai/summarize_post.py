@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import os
 import json
 import asyncio
-from database.db import SessionLocal
+from database.db import session_scope
 from database.models.thesisai import Post
 
 ENV_PATH = os.getenv("ENV_PATH")
@@ -20,7 +20,7 @@ async def summarize_points_from_post(post_id):
     """
     Summarizes main investment points from the post associated with the gigen post_id using GPT-4o.
     """
-    with SessionLocal() as session:
+    with session_scope() as session:
         post_obj = session.query(Post).filter(Post.id == post_id).first()
         
         post_content = post_obj.content

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from database.db import SessionLocal
+from database.db import session_scope
 from database.models.thesisai import Comment
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
@@ -16,7 +16,7 @@ if not OPENAI_API_KEY:
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 def fetch_comments_for_post(post_id):
-    with SessionLocal() as session:
+    with session_scope() as session:
         comments = session.query(Comment).filter(Comment.post_id == post_id).all()
         return comments
 

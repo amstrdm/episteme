@@ -1,8 +1,8 @@
 from database.models.thesisai import Ticker, Point
-from database.db import SessionLocal
+from database.db import session_scope
 
 def calculate_ticker_sentiment(ticker_obj: Ticker):
-    with SessionLocal() as session:
+    with session_scope() as session:
         points = session.query(Point).filter(Point.ticker_id == ticker_obj.id).all()
 
     sentiment_scores = [point.sentiment_score for point in points]

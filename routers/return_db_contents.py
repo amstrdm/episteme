@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from database.db import SessionLocal
+from database.db import session_scope
 from database.models.thesisai import Ticker, Post, Point
 from sqlalchemy import func
 from .retrieve_public_stock_info.stock_profile import get_stock_profile
@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.get("/retrieve-analysis")
 def fetch_analysis(ticker: str, timezone: str = Query(..., description="Timezone (e.g. 'Europe/Berlin')")):
-    with SessionLocal() as session:
+    with session_scope() as session:
         ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
 
         if not ticker_obj:

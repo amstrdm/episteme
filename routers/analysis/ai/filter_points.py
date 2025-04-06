@@ -8,7 +8,7 @@ import json
 import numpy as np
 import logging
 from database.models.thesisai import Ticker, Point
-from database.db import SessionLocal
+from database.db import session_scope
 from sqlalchemy.exc import SQLAlchemyError
 from sklearn.metrics.pairwise import cosine_similarity
 from sqlalchemy import func
@@ -51,7 +51,7 @@ def get_existing_points_as_dicts(ticker_obj: Ticker) -> List:
     Retrieve existing thesis points for the given ticker, including their stored embeddings.
     Returns a list of dictionaries.
     """
-    with SessionLocal() as session:
+    with session_scope() as session:
         points = session.query(Point).filter(Point.ticker_id == ticker_obj.id).all()
         points_list =[
                 {
@@ -213,7 +213,7 @@ async def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshol
 if __name__ == "__main__":
     ticker = "spry"
     new_points_list = [{'point': 'Epinephrine nasal spray available by prescription since September.', 'sentiment_score': 60, 'post_id': 6}, {'point': 'Shelf life of 30 months compared to 18 months for Epipen.', 'sentiment_score': 70, 'post_id': 6}, {'point': 'Renaissance Lakewood, LLC, partnered for production, expanding to meet demand.', 'sentiment_score': 65, 'post_id': 6}, {'point': 'Device may not be covered by insurance; not covered by Medicare.', 'sentiment_score': 45, 'post_id': 6}, {'point': 'Pushback from the medical community for speed of delivery concerns.', 'sentiment_score': 40, 'post_id': 6}, {'point': 'Better suited for home use, less likely for hospital use.', 'sentiment_score': 50, 'post_id': 6}, {'point': 'Launched first FDA-approved needle-free epinephrine nasal spray for severe allergic reactions.', 'sentiment_score': 75, 'post_id': 9}, {'point': 'Early sales have exceeded expectations.', 'sentiment_score': 80, 'post_id': 9}, {'point': 'Targets several segments within severe allergic reactions and could become an OTC medication.', 'sentiment_score': 78, 'post_id': 9}, {'point': 'Plans to expand indications into CSU and pediatric use.', 'sentiment_score': 74, 'post_id': 9}, {'point': 'Risks related to insurance coverage policies and competition with traditional auto-injectors.', 'sentiment_score': 40, 'post_id': 9}, {'point': 'First non-injectable epinephrine nasal spray launched in U.S. and Europe.', 'sentiment_score': 75, 'post_id': 10}, {'point': '140% year-to-date stock increase driven by product launch.', 'sentiment_score': 80, 'post_id': 10}, {'point': 'Solid balance sheet with $205 million in cash.', 'sentiment_score': 70, 'post_id': 10}, {'point': 'Received $145 million upfront payment from licensing deal with ALK-Abelló.', 'sentiment_score': 72, 'post_id': 10}, {'point': 'Uncertain demand curve shortly after commercialization start.', 'sentiment_score': 45, 'post_id': 10}, {'point': 'Notable insider selling recorded in November.', 'sentiment_score': 40, 'post_id': 10}]
-    with SessionLocal() as session:
+    with session_scope() as session:
         ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
 
     results = asyncio.run(remove_duplicate_points(new_points=new_points_list, ticker_obj=ticker_obj))
