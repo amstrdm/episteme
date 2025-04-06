@@ -7,7 +7,6 @@ def calculate_ticker_sentiment(ticker_obj: Ticker):
 
     sentiment_scores = [point.sentiment_score for point in points]
     average_score = sum(sentiment_scores) / len(sentiment_scores)
-    average_score_rounded = round(average_score)
 
-    return average_score_rounded
+    return average_score
 
