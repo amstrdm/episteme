@@ -12,6 +12,7 @@ from datetime import datetime
 import praw
 import os
 from dotenv import load_dotenv
+import yfinance
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.getenv("ENV_PATH")
@@ -68,9 +69,11 @@ def get_top_comments(submission, comment_limit=10):
         raise RuntimeError(f"Failed to fetch comments for post '{submission.id}': {str(e)}") from e
 
 
-def get_reddit_posts_info(subreddits, stock_name, stock_ticker, timeframe, num_posts):
+def get_reddit_posts_info(subreddits, stock_ticker, timeframe, num_posts):
     try:
         post_info_list = []
+        ticker_yf = yfinance.Ticker(stock_ticker)
+        stock_name = ticker_yf.info["longName"]
         for subreddit in subreddits:
             posts = find_reddit_posts(subreddit, stock_name, stock_ticker, timeframe, num_posts)
             # we output title, author, date(which we have to convert from the unix timestamp), upvotes, and url of the post

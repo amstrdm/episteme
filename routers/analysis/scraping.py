@@ -2,17 +2,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from .scrapers.reddit_scraper import get_reddit_posts_info
 from .scrapers.seekingalpha_scraper import get_seekingalpha_posts_info
 
-def scrape_reddit(ticker:str, title: str, subreddits, reddit_timeframe: str, reddit_num_posts: int):
-    return get_reddit_posts_info(stock_ticker=ticker, stock_name=title, subreddits=subreddits, timeframe=reddit_timeframe, num_posts=reddit_num_posts)
+def scrape_reddit(ticker:str, subreddits, reddit_timeframe: str, reddit_num_posts: int):
+    return get_reddit_posts_info(stock_ticker=ticker, subreddits=subreddits, timeframe=reddit_timeframe, num_posts=reddit_num_posts)
 
 def scrape_seekingalpha(ticker:str, seekingalpha_num_posts: int):
     return get_seekingalpha_posts_info(stock_ticker=ticker, num_posts=seekingalpha_num_posts)
 
-def scrape_content(ticker:str, title: str, subreddits, reddit_timeframe: str, reddit_num_posts: int, seekingalpha_num_posts):
+def scrape_content(ticker:str, subreddits, reddit_timeframe: str, reddit_num_posts: int, seekingalpha_num_posts):
     # Create a thread pool
     with ThreadPoolExecutor(max_workers=2) as executor:
         future_to_name = {
-            executor.submit(scrape_reddit, ticker, title, subreddits, reddit_timeframe, reddit_num_posts): "reddit",
+            executor.submit(scrape_reddit, ticker, subreddits, reddit_timeframe, reddit_num_posts): "reddit",
             executor.submit(scrape_seekingalpha, ticker, seekingalpha_num_posts): "seekingalpha"
         }
 

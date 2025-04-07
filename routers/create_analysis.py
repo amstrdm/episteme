@@ -20,7 +20,6 @@ default_seekingalpha_num_posts = os.getenv("SEEKINGALPHA_DEFAULT_NUM_POSTS")
 def start_analysis(
     background_tasks: BackgroundTasks,
     ticker:str = Query(..., description="The ticker symbol for the analysis"),
-    title: str = Query(..., description="The stock name"),
     subreddits: Optional[List[str]] = Query(default=default_subreddits, description="List of subreddits to scrape"),
     reddit_timeframe: Optional[str] = Query(default=default_reddit_timeframe, description="Timeframe to scrape posts(e.g., 'hour', 'day', 'week', 'month', 'year', 'all')"),
     reddit_num_posts: Optional[int] = Query(default=default_reddit_num_posts, description="Number of reddit posts to scrape"),
@@ -39,7 +38,6 @@ def start_analysis(
     background_tasks.add_task(
         start_analysis_process, 
         ticker=ticker, 
-        title=title, 
         subreddits=subreddits, 
         reddit_timeframe=reddit_timeframe, 
         reddit_num_posts=reddit_num_posts, 
