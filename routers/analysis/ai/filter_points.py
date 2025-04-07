@@ -46,13 +46,13 @@ def cosine_sim(vec1: np.array, vec2: np.array) -> float:
 # Database Retrieval
 # -------------------------
 
-def get_existing_points_as_dicts(ticker_obj: Ticker) -> List:
+def get_existing_points_as_dicts(ticker_id: int) -> List:
     """
     Retrieve existing thesis points for the given ticker, including their stored embeddings.
     Returns a list of dictionaries.
     """
     with session_scope() as session:
-        points = session.query(Point).filter(Point.ticker_id == ticker_obj.id).all()
+        points = session.query(Point).filter(Point.ticker_id == ticker_id).all()
         points_list =[
                 {
                     "point": point.text,
@@ -67,7 +67,7 @@ def get_existing_points_as_dicts(ticker_obj: Ticker) -> List:
 # Duplicate Filtering Function
 # -------------------------
 
-async def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshold: float = 0.40) -> Dict:
+async def remove_duplicate_points(new_points: List, ticker_id: int, threshold: float = 0.40) -> Dict:
     """
     Remove duplicate thesis points by comparing new points against those already stored in the database.
     
@@ -81,7 +81,7 @@ async def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshol
     Returns a dictionary with the filtered (unique) thesis points.
     """
     # Retrieve existing points (including embeddings) & Prepare lists for existing embeddings and texts
-    existing_points = get_existing_points_as_dicts(ticker_obj)
+    existing_points = get_existing_points_as_dicts(ticker_id)
     existing_embeddings = [np.array(pt["embedding"]) for pt in existing_points if pt.get("embedding")]
     existing_point_texts = [pt.get("point") for pt in existing_points if pt.get("point")]
 
@@ -119,7 +119,6 @@ async def remove_duplicate_points(new_points: List, ticker_obj: Ticker, threshol
         if existing_embeddings:
             sims = [cosine_sim(new_embedding, emb) for emb in existing_embeddings]
             max_sim = max(sims) if sims else 0.0
-            print(pt, max_sim)
             if max_sim >= threshold:
                 is_duplicate = True
         

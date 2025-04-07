@@ -36,25 +36,26 @@ def add_new_ticker_to_db(ticker_symbol: str):
             description_last_analyzed=datetime.now()
         )
         session.add(ticker)
-        session.commit()
 
-def update_description_if_needed(ticker_obj: Ticker):
+def update_description_if_needed(ticker_id: int):
     """
     Checks when the description saved in DB was generated.
     If it's been longer than 3 months it generates a new one.
     """
-    last_analyzed = ticker_obj.description_last_analyzed
-    three_months_ago = datetime.now() - relativedelta(months=3)
+    
+    with session_scope() as session:
+        ticker_obj = session.get(Ticker, ticker_id)
+        last_analyzed = ticker_obj.description_last_analyzed
+        one_month_ago = datetime.now() - relativedelta(months=1)
 
-    if last_analyzed < three_months_ago:
-        with session_scope() as session:
-            generate_company_description(str(ticker_obj.symbol).lower())
+        if last_analyzed is None or last_analyzed < one_month_ago:
+            new_description = generate_company_description(str(ticker_obj.symbol).lower())
+            ticker_obj.description = new_description
             ticker_obj.description_last_analyzed = datetime.now()
             session.add(ticker_obj)
-            session.commit()
         
 def filter_analyzed_posts(
-        ticker_obj: str,
+        ticker_id: int,
         scraped_posts: List[Dict],
 ) -> List[Dict]:
     """
@@ -70,13 +71,14 @@ def filter_analyzed_posts(
         # No URL's to filter
         return scraped_urls
     
-    # 2. Retrieve existing URLs in one query
-    stmt = (
-        select(Post.link)
-        .where(Post.ticker_id == ticker_obj.id)
-        .where(Post.link.in_(scraped_urls))
-    )
     with session_scope() as session:
+        ticker_obj = session.get(Ticker, ticker_id)
+        # 2. Retrieve existing URLs in one query
+        stmt = (
+            select(Post.link)
+            .where(Post.ticker_id == ticker_obj.id)
+            .where(Post.link.in_(scraped_urls))
+        )
         existing_links = set(link for (link,) in session.execute(stmt))
 
     # 3. Filter out scraped posts if their url is in 'existing_links'
@@ -89,11 +91,12 @@ async def summarize_all_posts(post_ids: List):
     results = await asyncio.gather(*tasks, return_exceptions=True)
     return results
 
-def save_new_point(ticker_obj: Ticker, post_id: int, text: str, sentiment_score: int, embedding: np.array):
+def save_new_point(ticker_id: int, post_id: int, text: str, sentiment_score: int, embedding: np.array):
     """
     Save a new thesis point to the database, including its computed embedding.
     """
     with session_scope() as session:
+        ticker_obj = session.get(Ticker, ticker_id)
         new_point = Point(
             ticker_id=ticker_obj.id,
             post_id=post_id,
@@ -102,7 +105,6 @@ def save_new_point(ticker_obj: Ticker, post_id: int, text: str, sentiment_score:
             embedding=embedding.tolist()  # Convert numpy array to list for storage
         )
         session.add(new_point)
-        session.commit()
 
 async def start_analysis_process(
         # ticker:str,
@@ -141,17 +143,18 @@ async def start_analysis_process(
         print("Started analysis")
         ticker_exists, _ = check_ticker_in_database(ticker)
         if not ticker_exists:
-            add_new_ticker_to_db(ticker)
+            await asyncio.to_thread(add_new_ticker_to_db, ticker)
         
         with session_scope() as session:
             ticker_obj = session.query(Ticker).filter(func.lower(Ticker.symbol) == ticker.lower()).first()
+            ticker_id = ticker_obj.id
 
         # Step 1: Generate Description
         TASKS[task_id].update({
             "status": PROGRESS_STAGES[1],
             "progress": 1
         })
-        update_description_if_needed(ticker_obj)
+        await asyncio.to_thread(update_description_if_needed, ticker_id)
 
         # Step 2: Scrape content
         TASKS[task_id].update({
@@ -166,7 +169,7 @@ async def start_analysis_process(
             "status": PROGRESS_STAGES[3],
             "progress": 3
         })
-        filtered_posts = filter_analyzed_posts(ticker_obj=ticker_obj, scraped_posts=scrape_results)
+        filtered_posts = filter_analyzed_posts(ticker_id=ticker_id, scraped_posts=scrape_results)
 
         # Step 4: Save scraped posts to Database
         TASKS[task_id].update({
@@ -194,7 +197,7 @@ async def start_analysis_process(
             "progress": 6
         })
 
-        filtering_results = await remove_duplicate_points(new_points, ticker_obj)
+        filtering_results = await remove_duplicate_points(new_points, ticker_id)
         filtered_points = []
         for result in filtering_results:
             if isinstance(result, Exception):
@@ -230,14 +233,12 @@ async def start_analysis_process(
             "progress": 9
         })
 
-        overall_sentiment_score = calculate_ticker_sentiment(ticker_obj)
-        commit_overall_sentiment_score(ticker_obj.id, overall_sentiment_score)
+        overall_sentiment_score = calculate_ticker_sentiment(ticker_id)
+        commit_overall_sentiment_score(ticker_id, overall_sentiment_score)
 
         with session_scope() as session:
-            # Object is from a detached session so we can read but not write, therefore we have to get a new obj
-            ticker_obj = session.get(Ticker, ticker_obj.id)
+            ticker_obj = session.get(Ticker, ticker_id)
             ticker_obj.last_analyzed = datetime.now()
-            session.commit()
 
         # Step 10: Update task status to completed
         TASKS[task_id].update({

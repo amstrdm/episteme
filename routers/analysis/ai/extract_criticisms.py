@@ -15,12 +15,7 @@ if not OPENAI_API_KEY:
 
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
-def fetch_comments_for_post(post_id):
-    with session_scope() as session:
-        comments = session.query(Comment).filter(Comment.post_id == post_id).all()
-        return comments
-
-async def process_post_group(ticker_symbol: str, post_id: int, points: list) -> list:
+async def process_post_group(post_id: int, points: list, ticker_symbol: str = "", ) -> list:
     """
     For a single post, fetch the comments and use GPT to analyze the minimal version of each thesis point.
     The minimal version only contains 'point' and 'sentiment_score'.
@@ -29,8 +24,9 @@ async def process_post_group(ticker_symbol: str, post_id: int, points: list) -> 
     by matching on 'point' and 'sentiment_score'.
     """
 
-    comment_objs = fetch_comments_for_post(post_id)
-    comments_data = [{"comment_id": comment.id, "content": comment.content} for comment in comment_objs]
+    with session_scope() as session:
+        comment_objs = session.query(Comment).filter(Comment.post_id == post_id).all()
+        comments_data = [{"comment_id": comment.id, "content": comment.content} for comment in comment_objs]
 
     # Create a minimal version of the points: only include text and sentiment.
     minimal_points = [
@@ -105,7 +101,6 @@ async def process_post_group(ticker_symbol: str, post_id: int, points: list) -> 
 
     gpt_response = json.loads(response.output_text)
     gpt_analysis = gpt_response.get("results", [])
-    print(gpt_response)
     # Merge GPT's analysis with the original full points by matching on 'point' and 'sentiment_score'.
     merged_points = []
     for orig in points:
@@ -129,7 +124,7 @@ async def analyze_comments(ticker_symbol: str, points_list: list) -> list:
     tasks = []
     
     for post_id, pts in grouped_points.items():
-        tasks.append(process_post_group(ticker_symbol, post_id, pts))
+        tasks.append(process_post_group(post_id, pts, ticker_symbol))
     
     results_per_post = await asyncio.gather(*tasks, return_exceptions=True)
     final_points = []
@@ -138,6 +133,5 @@ async def analyze_comments(ticker_symbol: str, points_list: list) -> list:
             print("Error processing a post group:", res)
             continue
         final_points.extend(res)
-    print("FINAL POINTS:", final_points)
     return final_points
 
