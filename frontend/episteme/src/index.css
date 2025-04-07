@@ -1,0 +1,81 @@
+@import 'tailwindcss';
+
+
+body {
+  background-color: #141118;
+}
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+  
+@theme {
+    --color-widget-background: #1F1C23;
+    --color-dark-background: #141118;
+    --color-light-text: #718096;
+    --color-white-text: #E2E8F0;
+    --color-criticism-orange: #F29408;
+    --color-episteme-teal: #8fe5d1;
+}
+
+.loader {
+  width: fit-content;
+  font-weight: bold;
+  font-family: monospace;
+  white-space: pre;
+  font-size: 30px;
+  line-height: 1.2em;
+  height: 1.2em;
+  overflow: hidden;
+  color: #e2e8f0;
+}
+.loader:before {
+  content: "Loading...\A⌰oading...\A⌰⍜ading...\A⌰⍜⏃ding...\A⌰⍜⏃⎅ing...\A⌰⍜⏃⎅⟟ng...\A⌰⍜⏃⎅⟟⋏g...\A⌰⍜⏃⎅⟟⋏☌...\A⌰⍜⏃⎅⟟⋏☌⟒..\A⌰⍜⏃⎅⟟⋏☌⟒⏁.\A⌰⍜⏃⎅⟟⋏☌⟒⏁⋔";
+  white-space: pre;
+  display: inline-block;
+  animation: l39 1s infinite steps(11) alternate;
+}
+
+@keyframes l39 {
+  100% {
+    transform: translateY(-100%);
+  }
+}
+
+.loading-page-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #141118;
+  padding: 1rem;
+}
+
+.loading-status {
+  margin-top: 1.5rem;
+  font-size: 1.125rem;
+  color: #9ca3af;
+  min-height: 1.75rem;
+  text-align: center;
+}
+
+.loading-error {
+  margin-top: 1.5rem;
+  font-size: 1.125rem;
+  color: #f87171;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  max-width: 600px;
+  text-align: center;
+}
+
+
+
