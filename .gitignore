@@ -1,5 +1,6 @@
 config.env
 errors.log
+warnings.log
 test
 test.py
 __pycache__/
