@@ -13,6 +13,7 @@ import praw
 import os
 from dotenv import load_dotenv
 import yfinance
+import logging
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.getenv("ENV_PATH")
@@ -78,23 +79,28 @@ def get_reddit_posts_info(subreddits, stock_ticker, timeframe, num_posts):
             posts = find_reddit_posts(subreddit, stock_name, stock_ticker, timeframe, num_posts)
             # we output title, author, date(which we have to convert from the unix timestamp), upvotes, and url of the post
             for post in posts:
-                # Get top comments for each post
-                top_comments = get_top_comments(post, comment_limit=10)
+                try:
+                    # Get top comments for each post
+                    top_comments = get_top_comments(post, comment_limit=10)
 
-                # we save each post info as a dict then save them all in a list  
-                # to later be converted into a pd dataframe
-                post_info = {
-                    "source": "reddit",
-                    "subreddit": subreddit,
-                    "title": post.title,
-                    "author": str(post.author),
-                    "time_of_post": datetime.fromtimestamp(post.created_utc).strftime('%d-%m-%Y'),
-                    "upvotes": str(post.score),
-                    "url": "https://www.reddit.com"+post.permalink,
-                    "content": post.selftext,
-                    "comments": top_comments
-                }
-                post_info_list.append(post_info)
+                    # we save each post info as a dict then save them all in a list  
+                    # to later be converted into a pd dataframe
+                    post_info = {
+                        "source": "reddit",
+                        "subreddit": subreddit,
+                        "title": post.title,
+                        "author": str(post.author),
+                        "time_of_post": datetime.fromtimestamp(post.created_utc).strftime('%d-%m-%Y'),
+                        "upvotes": str(post.score),
+                        "url": "https://www.reddit.com"+post.permalink,
+                        "content": post.selftext,
+                        "comments": top_comments
+                    }
+                    post_info_list.append(post_info)
+                except Exception as e:
+                    # Log the error for this particular post and continue with the next
+                    logging.warning(f"Skipping post {post} due to error: {e}")
+                    continue
         return post_info_list
     except Exception as e:
         raise RuntimeError(f"Failed to scrape Reddit posts: {str(e)}") from e
