@@ -6,6 +6,7 @@ import re
 from bs4 import BeautifulSoup
 from datetime import datetime
 import json
+import logging
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.getenv("ENV_PATH")
@@ -142,12 +143,16 @@ def get_top_comments(post_id, post_url, comment_limit=10):
 
 
 def get_seekingalpha_posts_info(stock_ticker, num_posts):
+    url = f"{base_url}/analysis/v2/get-details"
+    post_info_list = []
     try:
-        url = f"{base_url}/analysis/v2/get-details"
-        post_info_list = []
         post_ids = find_seekingalpha_posts(stock_ticker, num_posts)
+    except Exception as e:
+        # Log error if we can't even fetch the list of post IDs
+        raise RuntimeError(f"Failed to fetch SeekingAlpha posts for ticker {stock_ticker}: {str(e)}") from e
 
-        for post_id in post_ids:
+    for post_id in post_ids:
+        try:
             querystring = {"id": post_id}
             response = requests.get(url=url, headers=headers, params=querystring)
             json_data = get_json_response(response, expected_keys=["data"])
@@ -186,12 +191,15 @@ def get_seekingalpha_posts_info(stock_ticker, num_posts):
                 "comments": comments
             }
             post_info_list.append(post_info)
-        return post_info_list
-    except Exception as e:
-        raise RuntimeError(f"Failed to scrape SeekingAlpha posts: {str(e)}") from e
+        except Exception as e:
+            # Log the error for this particular post and continue with the next
+            logging.warning(f"Skipping post {post_id} due to error: {e}")
+            continue
+
+    return post_info_list
 
 
 if __name__ == "__main__":
-    posts = get_seekingalpha_posts_info(stock_ticker="SPRY", num_posts=1)
+    posts = get_seekingalpha_posts_info(stock_ticker="aapl", num_posts=5)
     for post in posts:
         print(json.dumps(post, indent=4))
