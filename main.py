@@ -14,11 +14,23 @@ load_dotenv(ENV_PATH)
 
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 
-logging.basicConfig(
-    filename="errors.log", 
-    encoding="utf-8",
-    level=logging.ERROR, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+# Set up the root logger to capture all messages (or as needed)
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+# Create a handler for error-level messages (or above)
+error_handler = logging.FileHandler('errors.log', encoding='utf-8')
+error_handler.setLevel(logging.ERROR)
+error_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+error_handler.setFormatter(error_formatter)
+logger.addHandler(error_handler)
+
+# Create a handler for warning-level messages (or above)
+warning_handler = logging.FileHandler('warnings.log', encoding='utf-8')
+warning_handler.setLevel(logging.WARNING)
+warning_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+warning_handler.setFormatter(warning_formatter)
+logger.addHandler(warning_handler)
 
 
 origins = [
