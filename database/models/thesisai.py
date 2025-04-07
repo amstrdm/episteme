@@ -32,6 +32,7 @@ class Post(Base):
     ticker_id = Column(ForeignKey("tickers.id"), nullable=False)
     source = Column(String(50), nullable=False)
     title = Column(String(250))
+    author = Column(String(100), nullable=True)
     link = Column(Text)
     date_of_post = Column(DateTime)
     content = Column(Text)

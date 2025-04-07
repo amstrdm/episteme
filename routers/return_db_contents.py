@@ -45,6 +45,7 @@ def fetch_analysis(ticker: str, timezone: str = Query(..., description="Timezone
                 "sentimentScore": pt.sentiment_score,
                 "postUrl": post_obj.link if post_obj else None,
                 "postTitle": post_obj.title if post_obj else None,
+                "postAuthor": post_obj.author if post_obj else None,
                 "postSource": post_obj.source if post_obj else None,
                 "postDate": post_obj.date_of_post if post_obj else None,
                 "criticismExists": pt.criticism_exists,
