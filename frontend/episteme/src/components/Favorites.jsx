@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { data, Link } from 'react-router-dom';
-import apiClient from "../api/axiosinstance"; // Adjust path as needed
+import { Link } from 'react-router-dom';
+import apiClient from "../api/axiosinstance";
 
 const Favorites = () => {
   const [favoriteDetails, setFavoriteDetails] = useState([]);
@@ -8,28 +8,29 @@ const Favorites = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-     const fetchFavoriteDetails = async () => {
+    const fetchFavoriteDetails = async () => {
       setIsLoading(true);
       setError(null);
       setFavoriteDetails([]);
 
-      let favoriteTickers = [];
+      let favoriteItems = [];
       const storageKey = 'favorites';
 
       try {
         const storedFavorites = localStorage.getItem(storageKey);
         if (storedFavorites) {
           const parsedFavorites = JSON.parse(storedFavorites);
-           if (Array.isArray(parsedFavorites)) {
-             if (parsedFavorites.length > 0 && typeof parsedFavorites[0] === 'object' && parsedFavorites[0] !== null && 'ticker' in parsedFavorites[0]) {
-                favoriteTickers = parsedFavorites.map(fav => fav.ticker).filter(ticker => typeof ticker === 'string' && ticker.trim() !== '');
-             } else if (parsedFavorites.length > 0 && typeof parsedFavorites[0] === 'string') {
-                 favoriteTickers = parsedFavorites.filter(ticker => typeof ticker === 'string' && ticker.trim() !== '');
-             } else {
-                 favoriteTickers = [];
+           // **Expect array of objects with ticker and logo**
+          if (Array.isArray(parsedFavorites)) {
+             favoriteItems = parsedFavorites.filter(
+               item => typeof item === 'object' && item !== null && typeof item.ticker === 'string' && item.ticker.trim() !== ''
+             );
+             if (favoriteItems.length !== parsedFavorites.length) {
+                localStorage.setItem(storageKey, JSON.stringify(favoriteItems));
              }
           } else {
             console.error("Stored favorites is not a valid array:", parsedFavorites);
+            localStorage.setItem(storageKey, "[]");
             throw new Error("Invalid data format in local storage.");
           }
         }
@@ -40,7 +41,7 @@ const Favorites = () => {
         return;
       }
 
-      if (favoriteTickers.length === 0) {
+      if (favoriteItems.length === 0) {
         setIsLoading(false);
         return;
       }
@@ -53,9 +54,16 @@ const Favorites = () => {
       }
 
       try {
-        const fetchPromises = favoriteTickers.map(ticker => {
+        const fetchPromises = favoriteItems.map(favItem => {
+          const ticker = favItem.ticker;
+          const logoFromStorage = favItem.logo;
+
           return apiClient.get('/retrieve-analysis', {
-            params: { ticker: ticker, timezone: userTimezone }
+            params: {
+                ticker: ticker,
+                timezone: userTimezone,
+                only_database: true
+            }
           })
             .then(response => {
               const data = response.data;
@@ -64,19 +72,19 @@ const Favorites = () => {
                   ticker: data.company.ticker || ticker,
                   title: data.company.title || 'Unknown Company',
                   sentimentScore: data.company.sentimentScore ?? null,
-                  logo: data.company.logo || null,
+                  logo: logoFromStorage,
                 };
               } else {
                  console.warn(`Received invalid data structure for ticker: ${ticker}`, data);
-                 return { ticker: ticker, title: 'Data Error', sentimentScore: null, logo: null, error: true };
+                 return { ticker: ticker, title: 'Data Error', sentimentScore: null, logo: logoFromStorage, error: true };
               }
             })
             .catch(err => {
                console.error(`Failed to fetch details for ticker ${ticker}:`, err.response?.data || err.message || err);
-               return { ticker: ticker, title: 'Fetch Error', sentimentScore: null, logo: null, error: true };
+               return { ticker: ticker, title: 'Fetch Error', sentimentScore: null, logo: logoFromStorage, error: true };
             });
         });
-        console.log(data.company)
+
         const results = await Promise.all(fetchPromises);
         const validDetails = results.filter(detail => detail && !detail.error);
         setFavoriteDetails(validDetails);
@@ -95,7 +103,7 @@ const Favorites = () => {
 
   const handleImageError = (e) => {
     e.target.onerror = null;
-    e.target.src = 'https://via.placeholder.com/40?text=N/A';
+    e.target.src = '';
   };
 
 
@@ -108,9 +116,8 @@ const Favorites = () => {
 
       {!isLoading && !error && (
         <>
-          {console.log(favoriteDetails)}
           {favoriteDetails.length === 0 ? (
-            <p className="text-gray-400 p-4 text-center">You haven't added any stocks to your favorites yet, or failed to load details.</p>
+            <p className="text-gray-400 p-4 text-center">You haven't added any stocks to your favorites yet.</p>
           ) : (
             <ul className="list-none p-0 m-0">
               {favoriteDetails.map((fav) => (
@@ -119,9 +126,8 @@ const Favorites = () => {
                     to={`/stock/${fav.ticker.toLowerCase()}`}
                     className="flex items-center gap-4 p-4 bg-dark-background rounded-lg hover:opacity-50 transition-opacity duration-150 cursor-pointer w-full"
                   >
-                    {console.log(fav.logo)}
                     <img
-                      src={fav.logo}
+                      src={fav.logo || 'https://via.placeholder.com/40?text=N/A'}
                       alt={`${fav.title || 'Stock'} logo`}
                       className="w-10 h-10 rounded-full object-contain flex-shrink-0 p-0.5"
                       onError={handleImageError}
@@ -135,11 +141,11 @@ const Favorites = () => {
                       </span>
                     </div>
                     <span className={`ml-auto font-medium text-lg px-3 py-1 rounded whitespace-nowrap ${
-                         fav.sentimentScore === null ? 'text-gray-400 bg-gray-700/50'
-                         : fav.sentimentScore > 60 ? 'text-green-300 bg-green-900/50'
-                         : fav.sentimentScore >= 40 ? 'text-orange-300 bg-orange-900/50'
-                         : 'text-red-300 bg-red-900/50'
-                         }`}>
+                          fav.sentimentScore === null ? 'text-gray-400 bg-gray-700/50'
+                          : fav.sentimentScore > 60 ? 'text-green-300 bg-green-900/50'
+                          : fav.sentimentScore >= 40 ? 'text-orange-300 bg-orange-900/50'
+                          : 'text-red-300 bg-red-900/50'
+                          }`}>
                       {typeof fav.sentimentScore === 'number' ? fav.sentimentScore : '-'}
                     </span>
                   </Link>

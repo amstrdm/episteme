@@ -109,17 +109,29 @@ const StockInfo = ({ company, isDescriptionExpanded, onToggleDescription }) => {
   useEffect(() => {
     if (company && company.ticker) {
       try {
-        const storedFavorites = JSON.parse(localStorage.getItem('favorites') || "[]");
-        if (!Array.isArray(storedFavorites)) {
-           console.error("Favorites in localStorage is not an array. Resetting.");
-           localStorage.setItem('favorites', "[]");
-           setIsFavorite(false);
-           return;
+        const storedFavoritesRaw = localStorage.getItem('favorites');
+        let storedFavorites = [];
+
+        if (storedFavoritesRaw) {
+            storedFavorites = JSON.parse(storedFavoritesRaw);
+            if (!Array.isArray(storedFavorites)) {
+                console.error("Favorites in localStorage is not an array. Resetting.");
+                localStorage.setItem('favorites', "[]");
+                storedFavorites = [];
+            } else {
+                 storedFavorites = storedFavorites.filter(item => typeof item === 'object' && item !== null && typeof item.ticker === 'string');
+                 if (storedFavorites.length !== JSON.parse(storedFavoritesRaw).length) {
+                     localStorage.setItem('favorites', JSON.stringify(storedFavorites));
+                 }
+            }
         }
-        const isFav = storedFavorites.includes(company.ticker);
+
+        // **Check for object with matching ticker**
+        const isFav = storedFavorites.some(fav => fav.ticker === company.ticker);
         setIsFavorite(isFav);
+
       } catch (error) {
-        console.error("Error reading favorites from localStorage:", error);
+        console.error("Error reading/parsing favorites from localStorage:", error);
         if (error instanceof SyntaxError) {
              localStorage.setItem('favorites', "[]");
         }
@@ -134,24 +146,33 @@ const StockInfo = ({ company, isDescriptionExpanded, onToggleDescription }) => {
     if (!company || !company.ticker) return;
 
     try {
-        let storedFavorites = JSON.parse(localStorage.getItem('favorites') || "[]");
-        if (!Array.isArray(storedFavorites)) {
-           console.error("Favorites in localStorage is not an array during toggle. Resetting.");
-           localStorage.setItem('favorites', "[]");
-           storedFavorites = [];
+        const storedFavoritesRaw = localStorage.getItem('favorites');
+        let storedFavorites = [];
+
+        if (storedFavoritesRaw) {
+            storedFavorites = JSON.parse(storedFavoritesRaw);
+            if (!Array.isArray(storedFavorites)) {
+                console.error("Favorites in localStorage is not an array during toggle. Resetting.");
+                localStorage.setItem('favorites', "[]");
+                storedFavorites = [];
+            } else {
+                 storedFavorites = storedFavorites.filter(item => typeof item === 'object' && item !== null && typeof item.ticker === 'string');
+            }
         }
 
-
-        const isCurrentlyFavorite = storedFavorites.includes(company.ticker);
-
+        const favoriteIndex = storedFavorites.findIndex(fav => fav.ticker === company.ticker);
         let updatedFavorites;
 
-        if (isCurrentlyFavorite) {
-          updatedFavorites = storedFavorites.filter(ticker => ticker !== company.ticker);
-          setIsFavorite(false);
+        if (favoriteIndex > -1) {
+            updatedFavorites = storedFavorites.filter((_, index) => index !== favoriteIndex);
+            setIsFavorite(false);
         } else {
-          updatedFavorites = [...storedFavorites, company.ticker];
-          setIsFavorite(true);
+            const newFavorite = {
+                ticker: company.ticker,
+                logo: company.logo || null
+            };
+            updatedFavorites = [...storedFavorites, newFavorite];
+            setIsFavorite(true);
         }
 
         localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
