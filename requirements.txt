@@ -16,3 +16,4 @@ SQLAlchemy_Utils
 transformers
 yfinance
 psycopg2
+redis

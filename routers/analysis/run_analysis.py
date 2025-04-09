@@ -17,9 +17,26 @@ from .ai.create_description import generate_company_description
 from .ai.summarize_post import summarize_points_from_post
 from .ai.filter_points import remove_duplicate_points
 from .ai.extract_criticisms import analyze_comments
-# A simple in-memory store for tasks
-# Keys = task_id, Value = dict with status, progress, error and result
-TASKS = {}
+
+import redis
+import json
+
+# Set up a connection to Redis.
+redis_client = redis.Redis(host="localhost", port=6379, db=0)
+
+def update_task(task_id: str, data:dict, expire_seconds: int = None):
+    """Stores the task data in Redis."""
+    if expire_seconds:
+        redis_client.set(task_id, json.dumps(data), ex=expire_seconds)
+    else:
+        redis_client.set(task_id, json.dumps(data))
+
+def get_task(task_id: str) -> dict:
+    """Retrieves the task data from Redis."""
+    value = redis_client.get(task_id)
+    if value:
+        return json.loads(value)
+    return None
 
 def add_new_ticker_to_db(ticker_symbol: str):
     print("Creating New Ticker")
@@ -133,12 +150,14 @@ async def start_analysis_process(
         ticker = kwargs.get("ticker").upper()
         task_id = kwargs.get("task_id")
 
-        TASKS[task_id] = {
+        # Set initial task state in Redis
+        initial_status = {
             "status": PROGRESS_STAGES[0],
             "progress": 0,
             "ticker": ticker,
             "error": None
         }
+        update_task(task_id, initial_status)
 
         print("Started analysis")
         ticker_exists, _ = check_ticker_in_database(ticker)
@@ -150,39 +169,35 @@ async def start_analysis_process(
             ticker_id = ticker_obj.id
 
         # Step 1: Generate Description
-        TASKS[task_id].update({
-            "status": PROGRESS_STAGES[1],
-            "progress": 1
-        })
+        task = get_task(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[1], "progress": 1})
+        update_task(task_id, task)
         await asyncio.to_thread(update_description_if_needed, ticker_id)
 
         # Step 2: Scrape content
-        TASKS[task_id].update({
-            "status": PROGRESS_STAGES[2],
-            "progress": 2
-        })
+        task = task.get(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[2], "progress": 2})
+        update_task(task_id, task)
         kwargs.pop("task_id")
         scrape_results = await asyncio.to_thread(scrape_content, **kwargs)
 
         # Step 3: Remove posts that are already in database and have therefore been analyzed before from scraped posts
-        TASKS[task_id].update({
-            "status": PROGRESS_STAGES[3],
-            "progress": 3
-        })
+        task = get_task(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[3], "progress": 3})
+        update_task(task_id, task)
+
         filtered_posts = filter_analyzed_posts(ticker_id=ticker_id, scraped_posts=scrape_results)
 
         # Step 4: Save scraped posts to Database
-        TASKS[task_id].update({
-            "status": PROGRESS_STAGES[4],
-            "progress": 4
-        })
+        task = get_task(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[4], "progress": 4})
+        update_task(task_id, task)
         new_posts_ids = commit_posts_to_db(posts_data=filtered_posts, ticker_symbol=ticker, session_scope=session_scope)
         
         # Step 5: Summarize saved posts
-        TASKS[task_id].update({
-            "status": PROGRESS_STAGES[5],
-            "progress": 5
-        })
+        task = task.get(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[5], "progress": 5})
+        update_task(task_id, task)
         summarization_results = await summarize_all_posts(new_posts_ids)
         new_points = []
         for result in summarization_results:
@@ -192,11 +207,9 @@ async def start_analysis_process(
             new_points.extend(result)
 
         # Step 6: Filter out duplicate points
-        TASKS[task_id].update({
-            "status": PROGRESS_STAGES[6],
-            "progress": 6
-        })
-
+        task = get_task(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[6], "progress": 6})
+        update_task(task_id, task)
         filtering_results = await remove_duplicate_points(new_points, ticker_id)
         filtered_points = []
         for result in filtering_results:
@@ -206,10 +219,9 @@ async def start_analysis_process(
             filtered_points.append(result)
         
         # Step 7: Extract & assign criticisms from comments
-        TASKS[task_id].update({
-            "status": PROGRESS_STAGES[7],
-            "progress": 7
-        })
+        task = task.get(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[7], "progress": 7})
+        update_task(task_id, task)
         criticism_results = await analyze_comments(ticker, filtered_points)
         points_with_criticisms = []
         for result in criticism_results:
@@ -219,20 +231,15 @@ async def start_analysis_process(
             points_with_criticisms.append(result)
 
         # Step 8: Save final points to database
-        TASKS[task_id].update({
-            "status": PROGRESS_STAGES[8],
-            "progress": 8
-        })
-
+        task = get_task(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[8], "progress": 8})
+        update_task(task_id, task)
         commit_final_points_to_db(points_with_criticisms)
 
         # Step 9: Calculate and commit overall sentiment score to ticker column & update last_analyzed entry in DB
-        
-        TASKS[task_id].update({
-            "status": PROGRESS_STAGES[9],
-            "progress": 9
-        })
-
+        task = get_task(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[9], "progress": 9})
+        update_task(task_id, task)
         overall_sentiment_score = calculate_ticker_sentiment(ticker_id)
         commit_overall_sentiment_score(ticker_id, overall_sentiment_score)
 
@@ -241,21 +248,21 @@ async def start_analysis_process(
             ticker_obj.last_analyzed = datetime.now()
 
         # Step 10: Update task status to completed
-        TASKS[task_id].update({
-            "status": "completed",
-            "progress": 10,
-        })
-        print(TASKS[task_id])
+        task = get_task(task_id) or {}
+        task.update({"status": PROGRESS_STAGES[10], "progress": 10})
+        update_task(task_id, task, expire_seconds=15)
+        print(task)
 
     except Exception as e:
-        error_stage = TASKS[task_id].get("status")
-        
+        task = get_task(task_id) or {}
+        error_stage = task.get("status", "unknown")
         # Log the detailed error information to the log file
         logging.error(f"Analysis failed for task {task_id}, ticker: {ticker}. Error occurred during {error_stage}: {str(e)}", exc_info=True)
 
         # Update task with user-friendly error message
-        TASKS[task_id].update({
+        task.update({
             "status": "failed",
             "error": f"An error occurred during {error_stage}. Please try again later or contact support.",
-            "progress": 100, # Mark as fully progressed but failed
+            "progress": 100
         })
+        update_task(task_id, task, expire_seconds=15)

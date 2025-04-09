@@ -2,7 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from pydantic import BaseModel
 import uuid
 from typing import Optional, List
-from routers.analysis.run_analysis import TASKS, start_analysis_process
+from routers.analysis.run_analysis import start_analysis_process, get_task, update_task
 from dotenv import load_dotenv
 import os
 
@@ -27,12 +27,14 @@ def start_analysis(
     ):
     task_id = str(uuid.uuid4())
 
-    # Initialize the task in the store with "pending" or "starting"
-    TASKS[task_id] = {
+    # Initialize the task in Redis with "pending" state
+    initial_task = {
         "status": "pending",
         "progress": 0,
-        "ticker": ticker
+        "ticker": ticker,
+        "error": None
     }
+    update_task(task_id, initial_task)
 
     # Add the analysis function to the background tasks
     background_tasks.add_task(
@@ -56,7 +58,7 @@ def analysis_status(task_id: str):
     Polling endpoint: user calls this with the task_id to check
     status and progress of the background job.
     """
-    task = TASKS.get(task_id)
+    task = get_task(task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
