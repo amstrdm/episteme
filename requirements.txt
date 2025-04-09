@@ -15,5 +15,5 @@ SQLAlchemy
 SQLAlchemy_Utils
 transformers
 yfinance
-psycopg2
+psycopg2-binary
 redis
