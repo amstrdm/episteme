@@ -28,7 +28,7 @@ const Header = () => {
                 className="object-contain overflow-hidden shrink-0 aspect-square w-[41px] h-[41px]"
                 alt=""
             />
-            <span className="text-xl lg:text-2xl font-bold text-white-text group-hover:text-episteme-teal transition-colors duration-200 ease-in-out">
+            <span className="text-xl lg:text-2xl font-bold text-white-text group-hover:text-episteme-teal transition-colors duration-300">
               Episteme
             </span>
         </Link>
