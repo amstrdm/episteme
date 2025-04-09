@@ -72,5 +72,3 @@ app.include_router(stock_query.router)
 app.include_router(check_analysis_route.router)
 app.include_router(create_analysis.router)
 app.include_router(return_db_contents.router)
-
-# Comment to test github updater script. Ignore this
