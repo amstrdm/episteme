@@ -41,19 +41,12 @@ const Header = () => {
         </div>
       )}
 
-      {/* Right Column: Navigation 
+      {/* Right Column: Navigation */}
       <nav className="flex gap-4 md:gap-6 justify-end items-center text-sm font-medium max-md:order-2 max-md:w-full max-md:justify-center max-md:mt-2">
         <div className="flex gap-5 items-center">
-          <a href="#faq" className="hover:text-blue-400 transition-colors">FAQ</a>
-          <a href="#pricing" className="hover:text-blue-400 transition-colors">Pricing</a>
+          <a href="https://docs.episteme.cloud" className="hover:text-blue-400 transition-colors">Docs</a>
         </div>
-        <img
-          src=""
-          className="object-contain overflow-hidden shrink-0 w-10 h-10 aspect-square rounded-full cursor-pointer"
-          alt="Profile"
-        />
       </nav>
-      */}
     </header>
   );
 };
