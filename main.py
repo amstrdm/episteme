@@ -1,13 +1,20 @@
-from fastapi import FastAPI, Request
+import os
+import secrets
+import logging
+
+from fastapi import FastAPI, Request, Security, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import APIKeyHeader
+
+from sqlalchemy.exc import SQLAlchemyError
+
+from dotenv import load_dotenv
+
 from routers import stock_query, create_analysis
 from routers import check_analysis_route
 from routers import return_db_contents
-from sqlalchemy.exc import SQLAlchemyError
-import logging
-from dotenv import load_dotenv
-import os
+
 
 ENV_PATH = os.getenv("ENV_PATH")
 load_dotenv(ENV_PATH)
@@ -41,10 +48,46 @@ origins = [
 if FRONTEND_URL:
     origins.append(FRONTEND_URL)
 
-app = FastAPI()
+# API-KEY config
+API_KEY_NAME = "X-API-KEY"
+SECRET_KEY = os.getenv("SECRET_API_KEY")
+
+if not SECRET_KEY:
+    logging.error("FATAL ERROR: SECRET_API_KEY environment variable not set.")
+    # Option 1: Raise error to prevent startup
+    raise ValueError("SECRET_API_KEY environment variable not set. Application cannot start securely.")
+
+api_key_header_auth = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+async def get_api_key(api_key_header:str = Security(api_key_header_auth)):
+    """
+    Dependency function to validate the API key from the X-API-Key header.
+    Raises HTTPException 401 if the key is missing or invalid.
+    """
+    if not api_key_header:
+        logging.warning(f"API Key missing from '{API_KEY_NAME}' header.")
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"API Key required in '{API_KEY_NAME}' header.",
+            headers={"WWW-Authenticate": "API Key"},
+        )
+    
+    if not secrets.compare_digest(api_key_header, SECRET_KEY):
+        logging.warning("Invalid API Key received.")
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key provided.",
+            headers={"WWW-Authenticate": "API Key"},
+        )
+    
+    return api_key_header
+
+app = FastAPI(dependencies=[Depends(get_api_key)])
 
 @app.exception_handler(SQLAlchemyError)
-async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+async def sqlalchemy_exception_handler():
     # Optionally log the error here for debugging/monitoring:
     # logger.error(f"SQLAlchemy error occurred: {exc}")
     return JSONResponse(
@@ -53,7 +96,7 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
     )
 
 @app.exception_handler(Exception)
-async def generic_exception_handler(request: Request, exc: Exception):
+async def generic_exception_handler():
     # Log the error as needed
     return JSONResponse(
         status_code=500,
