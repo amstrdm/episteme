@@ -318,7 +318,28 @@ const StockInfo = ({ company, isDescriptionExpanded, onToggleDescription }) => {
 
       {/* Description Section */}
       <div className="flex flex-col justify-center p-4 mt-6 w-full text-sm tracking-wide rounded-lg bg-dark-background">
-        <h2 className="font-medium leading-none text-slate-500">Description</h2>
+          <div className="flex items-center mb-3">
+            <h2 className="text-xl font-semibold text-white-text tracking-normal mr-1.5">
+              Description
+            </h2>
+            <div className="group relative flex items-center">
+                <img 
+                src="/deepseek_logo.webp" 
+                alt="Information"
+                className="h-4 w-auto cursor-pointer mt-1" 
+                />
+                <span
+                className="
+                  absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2
+                  w-max max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg
+                  invisible group-hover:visible opacity-0 group-hover:opacity-100
+                  bg-slate-700 text-white-text text-xs rounded py-1.5 px-3 shadow-lg
+                  transition-all duration-200 ease-in-out z-10 whitespace-nowrap"
+                >
+                  Powered by DeepSeek
+                </span>
+            </div>
+          </div>
         <div className="mt-2 leading-relaxed text-slate-200 text-max-md:max-w-full">
           {!company.description ? (
             <p>{noDescriptionText}</p>
