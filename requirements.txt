@@ -17,3 +17,4 @@ transformers
 yfinance
 psycopg2-binary
 redis
+uvicorn
