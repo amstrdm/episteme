@@ -13,7 +13,7 @@ class Ticker(Base):
     description = Column(Text)
     overall_sentiment_score = Column(
         Integer,
-        CheckConstraint("overall_sentiment_score BETWEEN 1 and 100"),
+        CheckConstraint("overall_sentiment_score BETWEEN 0 and 100"),
         nullable=True
     )
     last_analyzed = Column(DateTime)
@@ -53,7 +53,7 @@ class Point(Base):
     post_id = Column(ForeignKey("posts.id"), nullable=False)
     sentiment_score = Column(
         Integer,
-        CheckConstraint("sentiment_score BETWEEN 1 and 100"),
+        CheckConstraint("sentiment_score BETWEEN 0 and 100"),
         nullable=False
     )
     text = Column(Text, nullable=False)
