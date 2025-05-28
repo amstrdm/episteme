@@ -108,12 +108,11 @@ def get_reddit_posts_info(subreddits, stock_ticker, timeframe, num_posts):
 if __name__ == "__main__":
     # Example usage
     subreddits = ["stocks", "investing", "valueinvesting", "wallstreetbets"]
-    stock_name = "SPRY"
-    stock_ticker = "ARS Pharmaceuticals Inc."
+    stock_ticker = "SPRY"
     timeframe = "year" #timeframe can be "hour", "day", "week", "month", "year", "all"
     num_posts = 5
 
-    posts = get_reddit_posts_info(subreddits, stock_name, stock_ticker, timeframe, num_posts)
+    posts = get_reddit_posts_info(subreddits, stock_ticker, timeframe, num_posts)
 
     for post in posts:
         print(json.dumps(post, indent=4), "\n\n")
