@@ -6,12 +6,12 @@ import yfinance as yf
 
 ENV_PATH = os.getenv("ENV_PATH")
 load_dotenv(ENV_PATH)
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY ENVIRONMENT VARIABLE IS EITHER EMPTY OR DOESN'T EXIST")
+if not DEEPSEEK_API_KEY:
+    raise ValueError("DEEPSEEK_API_KEY ENVIRONMENT VARIABLE IS EITHER EMPTY OR DOESN'T EXIST")
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
 
 prompt = """
@@ -49,18 +49,21 @@ def generate_company_description(ticker: str):
     yf_ticker = yf.Ticker(ticker)
     company_info = yf_ticker.info
 
-    response = client.responses.create(
-        model = "gpt-4o",
-        tools=[{"type": "web_search_preview"}],
-        input = [
+    response = client.chat.completions.create(
+        model = "deepseek-chat",
+        messages = [
+            {
+                "role": "system",
+                "content": prompt,
+            },
             {
                 "role": "user",
-                "content": prompt+f"Company description:\n{company_info}\n",
+                "content": f"Company description:\n{company_info}\n",
             }
         ]
     )
 
-    return response.output_text
+    return response.choices[0].message.content
 
 if __name__ == "__main__":
 
